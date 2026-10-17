@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
+      crossorigin="anonymous"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"
+    />
+    <!-- For using color-modes (dark and light themes) -->
+    <script src="/assets/js/color-modes.js"></script>
+    <link rel="stylesheet" href="/css/style.css" />
+    <link rel="icon" type="image/png" href="assets/img/shopping-cart.png">
+
+    <title>Purchase Orders</title>
+  </head>
+  <body>
+    <!-- ? Main -->
+    <!-- * Every main wrapper in a html file should have the injected id -->
+    <div id="injected" class="container-fluid p-4">
+      <div>
+        <!-- Table Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <h1>Purchase Orders</h1>
+          <button
+            id="createBtn"
+            type="button"
+            class="btn primary-btn"
+            data-bs-toggle="modal"
+            data-bs-target="#createOrderModal"
+          >
+            <i class="bi bi-plus-circle me-2"></i>Create Purchase Order
+          </button>
+        </div>
+        <!-- Table -->
+        <div class="card">
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table table-striped table-hover">
+                <thead class="table-light">
+                  <tr>
+                    <th>Order ID</th>
+                    <th>Supplier</th>
+                    <th>Order Date</th>
+                    <th>Expected Date</th>
+                    <th>Total Amount</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="tableBody">
+                  <tr>
+                    <td colspan="7" class="text-center text-muted">
+                      No purchase orders found
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ? Modal -->
+    <div class="modal fade" id="createOrderModal" tabindex="-1">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <div class="modal-title h4">Create Purchase Order</div>
+            <button
+              type="button"
+              data-bs-dismiss="modal"
+              class="btn-close"
+              aria-label="Close"
+            ></button>
+          </div>
+          <!--*====================Start of the form=======================*-->
+          <form id="poForm" class="">
+            <div class="modal-body">
+              <div class="mb-3">
+                <label class="form-label">Supplier *</label
+                ><select id="supplierSelect" required="" class="form-select">
+                  <!-- todo: Suppliers should be rendered based on db.js -->
+                </select>
+              </div>
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label class="form-label">Order Date *</label>
+                    <!-- todo: Value of the date should be minimum today -->
+                    <input
+                      required=""
+                      type="date"
+                      class="form-control"
+                      value=""
+                      required
+                      id="minDateField"
+                    />
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label class="form-label">Expected Date *</label>
+                    <!-- todo: Value of the expected Date shouldn't be before the day ordered -->
+                    <input
+                      required=""
+                      type="date"
+                      class="form-control"
+                      value=""
+                      required
+                      id="maxDateField"
+                    />
+                  </div>
+                </div>
+              </div>
+              <hr />
+              <h5>Add Items</h5>
+              <div class="row">
+                <div class="col-md-4">
+                  <div class="mb-3">
+                    <label class="form-label">Product</label
+                    ><select id="productSelect" class="form-select"></select>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="mb-3">
+                    <label class="form-label">Quantity</label
+                    ><input
+                      id="productQuantity"
+                      min="1"
+                      type="number"
+                      class="form-control"
+                      value=""
+                    />
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="mb-3">
+                    <label class="form-label">Unit Price</label>
+                    <span id="unitPrice" class="form-control">0</span>
+                  </div>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                  <button
+                    id="addProdBtn"
+                    type="button"
+                    class="mb-3 btn btn-success w-100"
+                  >
+                    <i class="bi bi-plus"></i>
+                  </button>
+                </div>
+              </div>
+
+              <div id="tableWrapper" class="hidden table-responsive">
+                <table class="table table-sm table-striped table-bordered">
+                  <thead>
+                    <tr>
+                      <th>Product</th>
+                      <th>Quantity</th>
+                      <th>Unit Price</th>
+                      <th>Total</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="modalTableBody">
+                    <!-- Added product details here -->
+                    <tr id="totalAmountRow">
+                      <td colspan="3" class="text-end">
+                        <strong>Total Amount:</strong>
+                      </td>
+                      <td id="totalPrices" colspan="2"><strong></strong></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="modal-footer">
+              <button
+                type="button"
+                class="btn btn-light"
+                data-bs-dismiss="modal"
+              >
+                Cancel
+              </button>
+              <button id="addOrderBtn" type="submit" class="btn primary-btn">
+                Create Order
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
+      crossorigin="anonymous"
+    ></script>
+    <script src="/js/navbar.js" type="module"></script>
+    <script src="/js/orders.js" type="module"></script>
+  </body>
+</html>

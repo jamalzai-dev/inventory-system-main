@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Reports</title>
+    <script
+      src="https://kit.fontawesome.com/8d7557c58b.js"
+      crossorigin="anonymous"
+    ></script>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"
+    />
+    <script src="/assets/js/color-modes.js"></script>
+    <link rel="stylesheet" href="/css/style.css" />
+    <link rel="icon" type="image/png" href="assets/img/dashboard.png">
+  </head>
+  <body>
+    <div id="injected" class="container-fluid p-4">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+          <h1 class="header-title">Reports & Analytics</h1>
+          <p class="text-muted">View inventory insights and stock summaries.</p>
+        </div>
+      </div>
+
+      <div class="d-flex flex-wrap gap-2 mb-4">
+        <button class="btn btn-outline-secondary opt-low">
+          <i class="fa-solid fa-triangle-exclamation me-1"></i>Low Stock
+        </button>
+        <button class="btn btn-outline-secondary opt-inv">
+          <i class="fa-solid fa-chart-bar me-1"></i>Inventory Value
+        </button>
+        <button class="btn btn-outline-secondary opt-summ">
+          <i class="fa-solid fa-list me-1"></i>Summary
+        </button>
+      </div>
+
+      <div class="content low-stock">
+        <div class="card">
+          <div class="card-body">
+            <div class="low-stock-alert mb-3"></div>
+
+            <div class="table-responsive">
+              <table class="table table-striped table-bordered table-hover">
+                <thead>
+                  <tr>
+                    <th>PRODUCT</th>
+                    <th>SKU</th>
+                    <th>CURRENT QTY</th>
+                    <th>REORDER LEVEL</th>
+                    <th>STATUS</th>
+                  </tr>
+                </thead>
+                <tbody class="low-stock-content"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="content inv-value d-none">
+        <div class="row g-3 mb-4">
+          <div class="col-6 col-lg-3">
+            <div class="card text-center p-3 h-100">
+              <p class="text-muted small mb-1">TOTAL VALUE</p>
+              <p id="total-value" class="fs-5 fw-bold mb-0">$0</p>
+            </div>
+          </div>
+          <div class="col-6 col-lg-3">
+            <div class="card text-center p-3 h-100">
+              <p class="text-muted small mb-1">PRODUCTS</p>
+              <p id="prods" class="fs-5 fw-bold mb-0">0</p>
+            </div>
+          </div>
+          <div class="col-6 col-lg-3">
+            <div class="card text-center p-3 h-100">
+              <p class="text-muted small mb-1">TOTAL UNITS</p>
+              <p id="units" class="fs-5 fw-bold mb-0">0</p>
+            </div>
+          </div>
+          <div class="col-6 col-lg-3">
+            <div class="card text-center p-3 h-100">
+              <p class="text-muted small mb-1">AVG VALUE/PROD</p>
+              <p id="avg-val" class="fs-5 fw-bold mb-0">0</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title mb-3">Inventory Value per Product</h5>
+            <div class="table-responsive">
+              <table class="table table-striped table-bordered table-hover">
+                <thead class="table-dark">
+                  <tr>
+                    <th>PRODUCT</th>
+                    <th>CATEGORY</th>
+                    <th>QTY</th>
+                    <th>UNIT PRICE</th>
+                    <th>TOTAL VALUE</th>
+                    <th>% OF TOTAL</th>
+                  </tr>
+                </thead>
+                <tbody class="inv-value-content"></tbody>
+              </table>
+            </div>
+
+            <div
+              class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3"
+            >
+              <p id="pagination-results" class="mb-0 text-muted small">
+                results
+              </p>
+              <div class="d-flex gap-2">
+                <button
+                  id="previous-btn"
+                  class="btn btn-outline-secondary btn-sm"
+                >
+                  PREVIOUS
+                </button>
+                <button id="next-btn" class="btn btn-outline-secondary btn-sm">
+                  NEXT
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="content summary d-none">
+        <div class="row g-4">
+          <div class="col-12 col-md-6">
+            <div class="card h-100">
+              <div class="card-body">
+                <h5 class="card-title mb-3">Inventory Overview</h5>
+                <div class="d-flex justify-content-between border-bottom py-2">
+                  <span>Total Products</span>
+                  <span class="fw-bold Overview-tot-prod">—</span>
+                </div>
+                <div class="d-flex justify-content-between border-bottom py-2">
+                  <span>Total Inventory Value</span>
+                  <span class="fw-bold Overview-tot-inv-val">—</span>
+                </div>
+                <div class="d-flex justify-content-between border-bottom py-2">
+                  <span>Categories</span>
+                  <span class="fw-bold Overview-cat">—</span>
+                </div>
+                <div class="d-flex justify-content-between border-bottom py-2">
+                  <span>Suppliers</span>
+                  <span class="fw-bold Overview-supp">—</span>
+                </div>
+                <div class="d-flex justify-content-between border-bottom py-2">
+                  <span>Low Stock Items</span>
+                  <span class="fw-bold text-warning Overview-lowStock">—</span>
+                </div>
+                <div class="d-flex justify-content-between py-2">
+                  <span>Out of Stock</span>
+                  <span class="fw-bold text-danger Overview-outStock">—</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 col-md-6">
+            <div class="card h-100">
+              <div class="card-body">
+                <h5 class="card-title mb-3">Operations Summary</h5>
+                <div class="d-flex justify-content-between border-bottom py-2">
+                  <span>Total Purchase Orders</span>
+                  <span class="fw-bold summary-PO">—</span>
+                </div>
+                <div class="d-flex justify-content-between border-bottom py-2">
+                  <span>Pending POs</span>
+                  <span class="fw-bold text-warning summary-pending">—</span>
+                </div>
+                <div class="d-flex justify-content-between border-bottom py-2">
+                  <span>Received POs</span>
+                  <span class="fw-bold text-success summary-received">—</span>
+                </div>
+                <div class="d-flex justify-content-between border-bottom py-2">
+                  <span>Cancelled POs</span>
+                  <span class="fw-bold text-danger summary-cancelled">—</span>
+                </div>
+                <div class="d-flex justify-content-between border-bottom py-2">
+                  <span>Stock Adjustments</span>
+                  <span class="fw-bold summary-adj">—</span>
+                </div>
+                <div class="d-flex justify-content-between py-2">
+                  <span>Activity Log Entries</span>
+                  <span class="fw-bold summary-log">—</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="./js/navbar.js" type="module"></script>
+    <script src="./js/reports.js" type="module"></script>
+  </body>
+</html>

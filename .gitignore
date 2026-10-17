@@ -1,0 +1,9 @@
+node_modules/
+tests/artifacts/
+*.log
+.env
+.env.*
+!.env.example
+
+# Local implementation scratch files and verification logs.
+/work/

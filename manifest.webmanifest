@@ -1,0 +1,10 @@
+{
+  "name": "University IT Inventory",
+  "short_name": "IT Inventory",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f6f5",
+  "theme_color": "#173e3a",
+  "icons": [{ "src": "assets/inventory.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

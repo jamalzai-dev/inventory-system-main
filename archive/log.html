@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
+      crossorigin="anonymous"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"
+    />
+    <!-- For using color-modes (dark and light themes) -->
+    <script src="/assets/js/color-modes.js"></script>
+    <link rel="stylesheet" href="/css/style.css" />
+    <link rel="icon" type="image/png" href="assets/img/log.png">
+    <title>Activity Logs</title>
+  </head>
+  <body>
+    <div id="injected">
+      <div class="container-fluid p-4">
+        <div class="text-start align-items-center mb-4">
+          <h1>Activity Log</h1>
+        </div>
+        <!-- Module selection: -->
+        <div class="row mb-4">
+          <div class="col-md-6">
+            <div class="card">
+              <div class="card-body">
+                <label class="form-label">Filter by Module</label>
+                <select class="form-select" id="moduleSelect">
+                  <option value="all">All modules</option>
+                  <option value="PRODUCT">Products</option>
+                  <option value="CATEGORY">Categories</option>
+                  <option value="SUPPLIER">Suppliers</option>
+                  <option value="ORDER">Purchase Orders</option>
+                  <option value="STOCK">Stock Adjustments</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="bg-dark text-white card-header">
+            <h5 class="mb-0">
+              <i class="bi bi-activity me-2"></i>
+              Recent Activities
+            </h5>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table table-striped table-hover">
+                <thead class="table-light">
+                  <tr>
+                    <th>Timestamp</th>
+                    <th>Module</th>
+                    <th>Action</th>
+                    <th>Description</th>
+                    <!-- !Thinking about removing the last cell since it will be a static value anyway. -->
+                    <th>User</th>
+                  </tr>
+                </thead>
+                <tbody id="tableBody">
+                  <!-- Table data should be rendered here -->
+                </tbody>
+              </table>
+               <!-- Pagination -->
+          <div
+            class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3"
+          >
+            <p id="pagination-results" class="mb-0 text-muted small">results</p>
+            <div class="d-flex gap-2">
+              <button
+                id="previous-btn"
+                class="btn btn-outline-secondary btn-sm"
+              >
+                PREVIOUS
+              </button>
+              <button id="next-btn" class="btn btn-outline-secondary btn-sm">
+                NEXT
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
+      crossorigin="anonymous"
+    ></script>
+    <script src="/js/navbar.js" type="module"></script>
+    <script src="/js/log.js" type="module"></script>
+  </body>
+</html>
