@@ -38,7 +38,7 @@ New installations start empty. Add a category, then materials; suppliers are opt
 
 ## Data and deployment boundaries
 
-Records remain in this browser's localStorage under the existing university_it_inventory_v2 key. Legacy ims_* keys remain untouched. Authentication and sessions use PostgreSQL; inventory records are not centralized yet. Use one editing tab and download backups regularly. The latest recovery snapshot is not a substitute for external backups.
+Records remain in this browser's localStorage under the existing university_it_inventory_v2 key. Legacy ims_* keys remain untouched. Authentication and sessions use PostgreSQL. Authenticated PostgreSQL inventory read APIs are available, but the frontend is not connected to them yet. Use one editing tab and download backups regularly. The latest recovery snapshot is not a substitute for external backups.
 
 The manifest and an unregistered service-worker draft prepare for future PWA work; installability/offline caching is not enabled. Pashto translations need fluent staff review. Do not deploy the archive directory.
 
@@ -77,6 +77,15 @@ PostgreSQL `NUMERIC` values retain `pg`'s default string representation for exac
 decimal values. Future transactions must acquire one client with `pool.connect()`,
 use it for `BEGIN`, all statements and `COMMIT`, roll back on failure, and always
 release it in `finally`.
+
+## PostgreSQL inventory reads (Phase 3A)
+
+Authenticated `GET /api/categories`, `/api/suppliers`, `/api/materials`, and
+`/api/materials/:id` use the existing PostgreSQL pool and Admin session protection.
+Lists return `{ "data": [] }` when empty; a lookup returns `{ "data": material }`.
+Decimals remain exact strings and optional values remain null. No inventory writes
+or frontend storage changes are included. See the [API contract, schema findings,
+and frontend mapping](docs/INVENTORY-API.md) before future integration.
 
 ## Tests
 

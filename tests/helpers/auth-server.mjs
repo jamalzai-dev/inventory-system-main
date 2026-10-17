@@ -1,6 +1,7 @@
 import session from 'express-session';
 import bcrypt from 'bcrypt';
 import { createApp } from '../../server/app.js';
+import { createInventoryRepository } from '../../server/inventory.js';
 
 export const testCredentials = { username: 'test-admin', password: 'Synthetic-test-password-2026' };
 const hash = await bcrypt.hash(testCredentials.password, 4);
@@ -10,7 +11,8 @@ export async function startTestServer(options = {}) {
   const state = { admin: { id: 1, username: testCredentials.username, password_hash: hash } };
   const app = await createApp({
     config: { secret: 'test-only-session-secret-with-at-least-32-bytes', secure: false, trustProxy: false, ...options.config },
-    store, admins: options.admins || { findAdmin: async () => state.admin }, loginLimit: options.loginLimit ?? 1000
+    store, admins: options.admins || { findAdmin: async () => state.admin }, loginLimit: options.loginLimit ?? 1000,
+    inventory: options.inventory || createInventoryRepository({ query: async () => ({ rows: [] }) })
   });
   const server = app.listen(options.port ?? 0, '127.0.0.1');
   await new Promise((done, reject) => { server.once('listening', done); server.once('error', reject); });

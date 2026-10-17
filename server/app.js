@@ -5,6 +5,7 @@ import { randomBytes, timingSafeEqual } from 'node:crypto';
 import { resolve } from 'node:path';
 import { rateLimit } from 'express-rate-limit';
 import { credentialVersion } from './admin.js';
+import { createInventoryRouter } from './inventory-routes.js';
 
 const root = resolve(import.meta.dirname, '..');
 const cookieName = 'inventory.sid';
@@ -14,8 +15,8 @@ const publicFiles = new Set(['login/login.css', 'login/login.js']);
 const sessionCall = (object, method) => new Promise((done, reject) => object[method](error => error ? reject(error) : done()));
 
 // Dependencies are explicit for tests; the real entry point always supplies PostgreSQL.
-export async function createApp({ config, store, admins, loginLimit = 10 }) {
-  if (!store || !admins) throw new Error('A session store and admin repository are required.');
+export async function createApp({ config, store, admins, inventory, loginLimit = 10 }) {
+  if (!store || !admins || !inventory) throw new Error('A session store, admin repository and inventory repository are required.');
   const app = express();
   app.disable('x-powered-by');
   if (config.trustProxy) app.set('trust proxy', 'loopback');
@@ -92,6 +93,7 @@ export async function createApp({ config, store, admins, loginLimit = 10 }) {
     res.redirect('/login');
   });
   app.get('/api/auth/session', (req, res) => res.json({ authenticated: true }));
+  app.use('/api', createInventoryRouter(inventory));
   app.use((req, res) => {
     const file = req.path === '/' ? 'index.html' : req.path.slice(1);
     if (['GET', 'HEAD'].includes(req.method) && protectedFiles.has(file)) return serve(file, res);

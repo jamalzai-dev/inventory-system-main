@@ -5,6 +5,7 @@ import connectPgSimple from 'connect-pg-simple';
 import { readServerConfig } from '../server/config.js';
 import { createApp } from '../server/app.js';
 import { createAdminRepository } from '../server/admin.js';
+import { createInventoryRepository } from '../server/inventory.js';
 
 dotenv.config({ path: fileURLToPath(new URL('../.env', import.meta.url)), override: false, quiet: true });
 let database, store;
@@ -21,7 +22,8 @@ try {
     const PgStore = connectPgSimple(session);
     store = new PgStore({ pool: database.pool, schemaName: 'public', tableName: 'inventory_sessions', createTableIfMissing: false,
       errorLog: () => console.error('Session storage unavailable. Check PostgreSQL and permissions.') });
-    const app = await createApp({ config, store, admins: createAdminRepository(database.pool) });
+    const app = await createApp({ config, store, admins: createAdminRepository(database.pool),
+      inventory: createInventoryRepository(database.pool) });
     const server = app.listen(config.port, '127.0.0.1', () => console.log(`Local: http://127.0.0.1:${server.address().port}`));
     let closing = false;
     async function shutdown() {
