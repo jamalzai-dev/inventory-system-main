@@ -93,7 +93,7 @@ export async function createApp({ config, store, admins, inventory, loginLimit =
     res.redirect('/login');
   });
   app.get('/api/auth/session', (req, res) => res.json({ authenticated: true }));
-  app.use('/api', createInventoryRouter(inventory));
+  app.use('/api', createInventoryRouter(inventory, csrf));
   app.use((req, res) => {
     const file = req.path === '/' ? 'index.html' : req.path.slice(1);
     if (['GET', 'HEAD'].includes(req.method) && protectedFiles.has(file)) return serve(file, res);

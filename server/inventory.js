@@ -1,14 +1,19 @@
-// Server-only read repository. SQL identifiers/order are fixed, never user input.
-const categoryColumns = 'id, name, description, created_at, updated_at';
-const supplierColumns = 'id, name, contact, phone, email, address, description, created_at, updated_at';
+// Server-only repository. SQL identifiers/order are fixed, never user input.
+import { createInventoryWrites } from './inventory-writes.js';
+import { validUuid } from './inventory-validation.js';
+// Combine row transaction and exact timestamp, avoiding millisecond truncation
+// and transaction-ID-only tokens. Each API transaction updates a row at most once.
+const versionColumn = "md5(xmin::text || ':' || extract(epoch FROM updated_at)::text) AS version";
+const categoryColumns = `id, name, description, created_at, updated_at, ${versionColumn}`;
+const supplierColumns = `id, name, contact, phone, email, address, description, created_at, updated_at, ${versionColumn}`;
 const materialColumns = `id, name, category_id, current_stock::text AS current_stock,
   supplier_id, unit, serial_number, location, condition, price::text AS price,
   to_char(purchase_date, 'YYYY-MM-DD') AS purchase_date, responsible_person,
-  reorder_level::text AS reorder_level, description, created_at, updated_at`;
+  reorder_level::text AS reorder_level, description, created_at, updated_at, ${versionColumn}`;
 
 function common(row) {
   return { id: row.id, name: row.name, description: row.description,
-    createdAt: row.created_at, updatedAt: row.updated_at };
+    createdAt: row.created_at, updatedAt: row.updated_at, version: row.version };
 }
 function supplier(row) {
   return { ...common(row), contact: row.contact, phone: row.phone, email: row.email, address: row.address };
@@ -21,11 +26,22 @@ function material(row) {
 }
 
 // Accept canonical PostgreSQL UUID text (any version), not arbitrary castable input.
-export const validMaterialId = id => typeof id === 'string' && id.length === 36 &&
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+export const validMaterialId = validUuid;
+
+const definitions = {
+  categories: { table: 'public.categories', columns: categoryColumns, map: common,
+    fields: { name: 'name', description: 'description' } },
+  suppliers: { table: 'public.suppliers', columns: supplierColumns, map: supplier,
+    fields: { name: 'name', contact: 'contact', phone: 'phone', email: 'email', address: 'address', description: 'description' } },
+  materials: { table: 'public.materials', columns: materialColumns, map: material,
+    fields: { name: 'name', categoryId: 'category_id', supplierId: 'supplier_id', unit: 'unit', serial: 'serial_number',
+      location: 'location', condition: 'condition', price: 'price', purchaseDate: 'purchase_date',
+      responsible: 'responsible_person', reorderLevel: 'reorder_level', description: 'description' } }
+};
 
 export function createInventoryRepository(pool) {
   return {
+    ...createInventoryWrites(pool, definitions),
     async listCategories() {
       const { rows } = await pool.query(`SELECT ${categoryColumns} FROM public.categories ORDER BY name, id`, []);
       return rows.map(common);

@@ -83,9 +83,20 @@ release it in `finally`.
 Authenticated `GET /api/categories`, `/api/suppliers`, `/api/materials`, and
 `/api/materials/:id` use the existing PostgreSQL pool and Admin session protection.
 Lists return `{ "data": [] }` when empty; a lookup returns `{ "data": material }`.
-Decimals remain exact strings and optional values remain null. No inventory writes
-or frontend storage changes are included. See the [API contract, schema findings,
+Decimals remain exact strings and optional values remain null. See the [API contract, schema findings,
 and frontend mapping](docs/INVENTORY-API.md) before future integration.
+
+## PostgreSQL inventory writes (Phase 3B-1)
+
+Authenticated, CSRF-protected POST/PATCH/DELETE endpoints now cover categories,
+suppliers and material metadata. Materials start with zero stock; generic editing
+cannot change stock. PATCH/DELETE use record versions; POST uses durable retry keys.
+The existing frontend and localStorage are unchanged.
+
+**POST requires manual review and application of migration 003**, which has not
+been applied to the live database. Read the [write contract and migration steps](docs/INVENTORY-WRITES.md),
+[future integration requirements](docs/INVENTORY-INTEGRATION.md), and
+[verification results and known layout failures](docs/PHASE-3B-1-VERIFICATION.md).
 
 ## Tests
 

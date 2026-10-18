@@ -7,11 +7,11 @@ const id = '12345678-1234-4234-8234-123456789abc';
 const categoryId = '22345678-1234-4234-8234-123456789abc';
 const supplierId = '32345678-1234-4234-8234-123456789abc';
 const timestamp = new Date('2026-10-18T03:45:00.123Z');
-const common = { id, name: 'د پوهنتون وسایل', description: null, created_at: timestamp, updated_at: timestamp };
+const common = { id, name: 'د پوهنتون وسایل', description: null, created_at: timestamp, updated_at: timestamp, version: 'a'.repeat(32) };
 const materialRow = { ...common, category_id: categoryId, current_stock: '999999999.999', supplier_id: supplierId,
   unit: 'pieces', serial_number: 'UNI-001', location: 'Lab', condition: 'Good', price: '999999999.99',
   purchase_date: '2026-10-18', responsible_person: 'احمد', reorder_level: '0.001' };
-const expectedCommon = { id, name: common.name, description: null, createdAt: timestamp.toISOString(), updatedAt: timestamp.toISOString() };
+const expectedCommon = { id, name: common.name, description: null, createdAt: timestamp.toISOString(), updatedAt: timestamp.toISOString(), version: common.version };
 const expectedMaterial = { ...expectedCommon, categoryId, quantity: '999999999.999', supplierId,
   unit: 'pieces', serial: 'UNI-001', location: 'Lab', condition: 'Good', price: '999999999.99',
   purchaseDate: '2026-10-18', responsible: 'احمد', reorderLevel: '0.001' };
@@ -159,12 +159,13 @@ test('logout and credential changes revoke inventory access without querying inv
   assert.equal(f.calls.length, 1);
 });
 
-test('inventory exposes no write methods and new server source remains private', async t => {
+test('unsupported write methods stay unavailable, supported writes require CSRF, and server source remains private', async t => {
   const f = await fixture(t);
   await f.client.login();
   for (const path of paths) for (const method of ['POST', 'PUT', 'PATCH', 'DELETE']) {
-    assert.equal((await f.client.request(path, { method })).status, 404);
+    const supported = (method === 'POST' && path !== paths[3]) || (['PATCH', 'DELETE'].includes(method) && path === paths[3]);
+    assert.equal((await f.client.request(path, { method })).status, supported ? 403 : 404);
   }
-  for (const path of ['/server/inventory.js', '/server/inventory-routes.js']) assert.equal((await f.client.request(path)).status, 404);
+  for (const path of ['/server/inventory.js', '/server/inventory-routes.js', '/server/inventory-writes.js', '/server/inventory-validation.js', '/db/migrations/003-inventory-create-requests.sql']) assert.equal((await f.client.request(path)).status, 404);
   assert.equal(f.calls.length, 0);
 });

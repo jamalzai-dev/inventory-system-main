@@ -1,4 +1,11 @@
-# Current verification — 17 October 2026
+# Current backend verification — Phase 3B-1
+
+See [Phase 3B-1 verification](PHASE-3B-1-VERIFICATION.md) for current results,
+isolated PostgreSQL test commands, migration status and known browser failures.
+The three overflow failures reproduced in Phase 3A supersede the historical
+no-failures statement below; full responsive verification is not claimed.
+
+# Historical verification — 17 October 2026
 
 The in-place modernization passes **54 automated tests** and **59 browser checks**. Two legacy local-file checks are explicitly skipped by this managed Chromium environment because it blocks `file://` navigation. There are no remaining failing application checks. See the [modernization report](MODERNIZATION-REPORT.md) for the exact coverage, modified files and limits. The historical report below predates authenticated hosting and this redesign.
 

@@ -1,5 +1,11 @@
 # Phase 3A: authenticated PostgreSQL inventory reads
 
+This preserves the Phase 3A findings and verification history. Phase 3B-1 adds
+[secure write APIs](INVENTORY-WRITES.md) and an additive opaque `version` field to
+each read/write record for PATCH/DELETE concurrency checks. Existing field names,
+types and response wrappers remain unchanged. Historical statements below about
+unimplemented writes describe Phase 3A, not the current backend.
+
 The Express server now reads inventory through the existing PostgreSQL pool.
 The browser still uses `app/data.js` and `university_it_inventory_v2` localStorage.
 No frontend code, authentication policy, inventory records, or database schema was
