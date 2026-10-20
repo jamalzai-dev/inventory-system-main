@@ -10,7 +10,7 @@ import { createInventoryRouter } from './inventory-routes.js';
 const root = resolve(import.meta.dirname, '..');
 const cookieName = 'inventory.sid';
 const protectedFiles = new Set(['index.html', 'products.html', 'categories.html', 'suppliers.html', 'reports.html', 'orders.html', 'adjustments.html', 'log.html', 'manifest.webmanifest', 'service-worker.js', 'assets/inventory.svg',
-  ...['start.js', 'main.js', 'data.js', 'i18n.js', 'ui.js', 'preferences.js', 'auth.js', 'styles.css', 'icons.js', 'search.js', 'dashboard.js'].map(name => `app/${name}`)]);
+  ...['start.js', 'main.js', 'data.js', 'i18n.js', 'ui.js', 'preferences.js', 'auth.js', 'styles.css', 'icons.js', 'search.js', 'dashboard.js', 'api.js', 'store.js', 'decimal.js'].map(name => `app/${name}`)]);
 const publicFiles = new Set(['login/login.css', 'login/login.js']);
 const sessionCall = (object, method) => new Promise((done, reject) => object[method](error => error ? reject(error) : done()));
 

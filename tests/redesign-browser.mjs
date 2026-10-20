@@ -1,3 +1,4 @@
+import { seedInventory, serverInventory, readyInventory, fixtureId } from './helpers/browser-fixture.mjs';
 // Integration coverage uses real application routes in a fresh browser context.
 // Run via tests/helpers/disposable-browser.mjs to avoid production credentials.
 import { createRequire } from 'node:module';
@@ -29,7 +30,7 @@ page.on('pageerror', error => errors.push(error.message));
 page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
 await mkdir('tests/artifacts', { recursive: true });
 async function check(name, action) { await action(); checks.push(name); console.log('PASS', name); }
-async function route(name) { await page.goto(`${base}/#${name}`); await page.locator(`nav [data-page="${name}"][aria-current="page"]`).waitFor({ state: 'attached' }); }
+async function route(name) { await page.goto(`${base}/#${name}`); await page.locator(`nav [data-page="${name}"][aria-current="page"]`).waitFor({ state: 'attached' }); await readyInventory(page); }
 const search = page.locator('#global-search-input');
 const options = page.locator('[role=listbox] [role=option]');
 async function searchFor(value) {
@@ -39,9 +40,10 @@ async function searchFor(value) {
 }
 try {
   await page.goto(base);
+  await seedInventory(fixture);
   await page.evaluate(({ key, fixture }) => { localStorage.setItem(key, JSON.stringify(fixture)); localStorage.setItem('university_it_preferences', JSON.stringify(fixture.settings)); }, { key, fixture });
-  await page.reload();
-  await page.locator('h1').waitFor();
+  await page.reload(); await readyInventory(page);
+  await page.locator('h1').waitFor(); await readyInventory(page);
 
   await check('dashboard counts and chart labels use real records without mutation', async () => {
     assert.deepEqual(await page.locator('.stat .stat-value').allTextContents(), ['4', '2', '1', '1']);
@@ -57,19 +59,19 @@ try {
 
   await check('dashboard category/status filtering, sort and See All preserve context', async () => {
     await page.locator('.inventory-preview [aria-controls=preview-filters]').click();
-    await page.locator('#preview-filters [data-label=categoryId]').selectOption('computers');
+    await page.locator('#preview-filters [data-label=categoryId]').selectOption(fixtureId('computers'));
     await page.locator('#preview-filters [data-label=status]').selectOption('out');
-    assert.deepEqual(await page.locator('.inventory-preview tbody tr').getAttribute('data-record-id'), 'dock');
+    assert.deepEqual(await page.locator('.inventory-preview tbody tr').getAttribute('data-record-id'), fixtureId('dock'));
     await page.locator('.inventory-preview [data-i18n=seeAll]').click();
     await page.locator('nav [data-page=materials][aria-current=page]').waitFor({ state: 'attached' });
-    assert.equal(await page.locator('.filters [data-label=categoryId]').inputValue(), 'computers');
+    assert.equal(await page.locator('.filters [data-label=categoryId]').inputValue(), fixtureId('computers'));
     assert.equal(await page.locator('.filters [data-label=status]').inputValue(), 'out');
-    assert.equal(await page.locator('tbody tr').getAttribute('data-record-id'), 'dock');
+    assert.equal(await page.locator('tbody tr').getAttribute('data-record-id'), fixtureId('dock'));
     await route('dashboard');
     await page.locator('.inventory-preview [aria-controls=preview-filters]').click();
     await page.locator('#preview-filters .material-sort').selectOption('quantity');
-    assert.deepEqual(await page.locator('.inventory-preview tbody tr').evaluateAll(rows => rows.map(row => row.dataset.recordId)), ['dock', 'safe', 'switch', 'laptop']);
-    await page.locator('#preview-filters [data-label=categoryId]').selectOption('empty');
+    assert.deepEqual(await page.locator('.inventory-preview tbody tr').evaluateAll(rows => rows.map(row => row.dataset.recordId)), ['dock', 'safe', 'switch', 'laptop'].map(fixtureId));
+    await page.locator('#preview-filters [data-label=categoryId]').selectOption(fixtureId('empty'));
     assert.equal(await page.locator('.inventory-preview tbody .row-actions').count(), 0);
     assert.equal(await page.locator('.inventory-preview .empty').isVisible(), true);
     await route('materials');
@@ -125,23 +127,24 @@ try {
 
   await check('search reflects record edits and deletes immediately', async () => {
     await route('materials');
-    await page.locator('.filters input[type=search]').fill('Dell Latitude');
+    await page.locator('.filters input[type=search]').fill('USB-C docking station');
     await page.locator('tbody .row-actions button').first().click();
     await page.locator('#field-name').fill('Renamed teaching laptop');
-    await page.locator('dialog form [type=submit]').click();
+    await page.locator('dialog form [type=submit]').click(); await page.locator('.record-dialog').waitFor({state:'hidden'});
     await searchFor('Renamed teaching laptop');
     assert.equal(await options.count(), 1);
-    await searchFor('Dell Latitude');
+    await searchFor('USB-C docking station');
     assert.equal(await options.count(), 0);
     await search.press('Escape');
     await page.locator('.filters input[type=search]').fill('Renamed teaching laptop');
     await page.locator('tbody .row-actions button').last().click();
-    await page.locator('.confirm-dialog .primary').click();
+    await page.locator('.confirm-dialog .primary').click(); await page.locator('.confirm-dialog').waitFor({state:'hidden'});
     await searchFor('Renamed teaching laptop');
     assert.equal(await options.count(), 0);
     await search.press('Escape');
-    await page.evaluate(({ key, fixture }) => localStorage.setItem(key, JSON.stringify(fixture)), { key, fixture });
-    await page.reload();
+    await seedInventory(fixture);
+  await page.evaluate(({ key, fixture }) => localStorage.setItem(key, JSON.stringify(fixture)), { key, fixture });
+    await page.reload(); await readyInventory(page);
   });
 
   await check('Settings alone controls persistent language and appearance', async () => {
@@ -151,7 +154,7 @@ try {
     assert.equal(await page.locator('html').getAttribute('dir'), 'rtl');
     assert.equal(await page.locator('html').getAttribute('data-theme'), 'dark');
     assert.equal(await page.locator('.settings [data-language=ps]').getAttribute('aria-pressed'), 'true');
-    await page.reload();
+    await page.reload(); await readyInventory(page);
     assert.equal(await page.locator('html').getAttribute('lang'), 'ps');
     assert.equal(await page.locator('html').getAttribute('data-theme'), 'dark');
     await searchFor('شبکې');
@@ -170,7 +173,7 @@ try {
     for (const width of [320, 375, 390, 428]) for (const lang of ['en', 'ps']) {
       await page.setViewportSize({ width, height: 800 });
       await page.evaluate(lang => localStorage.setItem('university_it_preferences', JSON.stringify({ lang, dark: false })), lang);
-      await page.reload();
+      await page.reload(); await readyInventory(page);
       await route('materials');
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true, `${width}/${lang}`);
       const actions = page.locator('tbody tr').first().locator('.row-actions button');

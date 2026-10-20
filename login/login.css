@@ -1,7 +1,7 @@
 :root {
   color-scheme: light;
   font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
-  --canvas: #f5f7fb; --card: #ffffff; --text: #17233b; --muted: #596980;
+  --canvas: #f8fafc; --card: #ffffff; --text: #17233b; --muted: #596980;
   --line: #e2e8f0; --control: #8190a5; --input: #ffffff;
   --accent: #2563eb; --hover: #1d4ed8; --on-accent: #ffffff; --soft: #eff6ff;
   --error: #b33f3b; --error-bg: #fff0ef; --focus: #2563eb;
@@ -20,17 +20,19 @@ h1 { margin: 0; text-align: center; font-size: clamp(25px, 4vw, 29px); font-weig
 .field { margin-block: 19px; }
 label { display: block; margin-block-end: 8px; font-size: 12px; font-weight: 600; }
 input, button { font: inherit; }
-input { inline-size: 100%; min-inline-size: 0; block-size: 49px; border: 1px solid var(--control); border-radius: 9px; background: var(--input); color: var(--text); padding: 0 14px; transition: border-color .15s, box-shadow .15s; }
+input { inline-size: 100%; min-inline-size: 0; block-size: 50px; font-size: 16px; border: 1px solid var(--control); border-radius: 9px; background: var(--input); color: var(--text); padding: 0 14px; transition: border-color .15s, box-shadow .15s; }
 input:focus { outline: 3px solid var(--focus); outline-offset: 2px; border-color: var(--focus); }
 input[aria-invalid='true'] { border-color: var(--error); }
 button { cursor: pointer; }
 button:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
 .password-field { position: relative; }
 .password-field input { padding-inline-end: 76px; }
-#show-password { position: absolute; inset-inline-end: 3px; inset-block-start: 3px; block-size: 43px; min-inline-size: 64px; background: transparent; color: var(--accent); border: 0; border-radius: 6px; font-size: 12px; font-weight: 600; }
+#show-password { position: absolute; inset-inline-end: 3px; inset-block-start: 3px; block-size: 44px; min-inline-size: 64px; background: transparent; color: var(--accent); border: 0; border-radius: 6px; font-size: 12px; font-weight: 600; }
 #show-password:hover { background: var(--soft); }
 .submit { inline-size: 100%; margin-block-start: 7px; min-block-size: 49px; display: flex; align-items: center; justify-content: center; gap: 10px; padding: 12px 18px; background: var(--accent); color: var(--on-accent); border: 1px solid transparent; border-radius: 9px; font-size: 13px; font-weight: 650; box-shadow: 0 3px 7px #2563eb15; }
 .submit:hover { background: var(--hover); }
+.submit { transition: box-shadow .15s; }
+.submit:active:not(:disabled) { box-shadow: inset 0 0 0 1px currentColor; }
 .submit:disabled { cursor: wait; opacity: .75; }
 .arrow { font-size: 19px; margin-inline-start: 4px; line-height: 1; }
 .spinner { display: none; inline-size: 16px; block-size: 16px; border: 2px solid currentColor; border-inline-start-color: transparent; border-radius: 50%; animation: spin .8s linear infinite; }
@@ -45,6 +47,7 @@ footer span { margin-inline: 8px; }
 noscript { display: block; color: var(--error); margin-block-start: 20px; }
 @keyframes spin { to { transform: rotate(360deg); } }
 @media (max-width: 480px) { .login-shell { padding: 28px 16px 20px; } .login-card { padding: 25px 24px 26px; border-radius: 17px; } .logo-space { block-size: 50px; margin-block-end: 15px; } }
+@media (max-height: 600px) { .login-shell { justify-content: flex-start; padding-block-start: 24px; } }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 @media (prefers-color-scheme: dark) {
   :root { color-scheme: dark; --canvas: #101827; --card: #182338; --text: #e9effa; --muted: #b1bed2; --line: #2c3c55; --control: #7e91ac; --input: #162238; --accent: #95bcff; --hover: #bdd5ff; --on-accent: #132b50; --soft: #233d66; --error: #ffb8b6; --error-bg: #482e36; --focus: #95bcff; }

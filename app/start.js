@@ -12,7 +12,7 @@ if (location.protocol !== 'file:') {
     }
   };
   addText('Export your existing inventory', 'د خپل اوسني زېرمتون معلومات ښکته کړئ', 'h1');
-  addText('This application now runs through a local server. First download your existing records from this original file location. Then run npm start and restore the inventory backup at http://127.0.0.1:8080.', 'دا کاریال اوس د محلي سرور له لارې چلېږي. لومړی له همدې اصلي فایل څخه خپل معلومات ښکته کړئ. بیا npm start وچلوئ او په http://127.0.0.1:8080 کې د زېرمتون شاتړ بېرته راوګرځوئ.');
+  addText('This application now runs through a local server. First download your existing records from this original file location. Then run npm start to use the central server. Keep this legacy export separately; central JSON restoration is not available.', 'دا کاریال اوس د محلي سرور له لارې چلېږي. لومړی له همدې اصلي فایل څخه خپل معلومات ښکته کړئ. بیا npm start وچلوئ او مرکزي سرور وکاروئ. دا پخوانی صادر شوی فایل جلا وساتئ؛ مرکزي JSON بېرته راګرځول نشته.');
   const status = document.createElement('p'); status.setAttribute('role', 'status');
   function download(raw) {
     try {

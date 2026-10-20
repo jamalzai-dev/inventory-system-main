@@ -1,6 +1,7 @@
 // Server-only repository. SQL identifiers/order are fixed, never user input.
 import { createInventoryWrites } from './inventory-writes.js';
 import { validUuid } from './inventory-validation.js';
+import { createStockRepository } from './stock.js';
 // Combine row transaction and exact timestamp, avoiding millisecond truncation
 // and transaction-ID-only tokens. Each API transaction updates a row at most once.
 const versionColumn = "md5(xmin::text || ':' || extract(epoch FROM updated_at)::text) AS version";
@@ -42,6 +43,7 @@ const definitions = {
 export function createInventoryRepository(pool) {
   return {
     ...createInventoryWrites(pool, definitions),
+    ...createStockRepository(pool, definitions.materials),
     async listCategories() {
       const { rows } = await pool.query(`SELECT ${categoryColumns} FROM public.categories ORDER BY name, id`, []);
       return rows.map(common);

@@ -1,9 +1,26 @@
-# Current backend verification — Phase 3B-1
+# Current verification — Phase 3B-3
 
-See [Phase 3B-1 verification](PHASE-3B-1-VERIFICATION.md) for current results,
-isolated PostgreSQL test commands, migration status and known browser failures.
-The three overflow failures reproduced in Phase 3A supersede the historical
-no-failures statement below; full responsive verification is not claimed.
+See [frontend PostgreSQL verification](PHASE-3B-3-VERIFICATION.md) for current
+counts, commands and limits. Inventory browser suites now require `TEST_PG_BIN`
+and the disposable fixture runner. They seed its own isolated cluster through
+child-process IPC; they never seed the production-intended database or use staff
+credentials. `tests/integration-browser.mjs` independently creates its cluster and
+tests multiple authenticated clients, lost-response recovery and failure states.
+Do not run the old direct-browser commands against a live server for inventory tests.
+
+# Historical verification — Phase 3B-2.1
+
+See [UI stabilization verification](PHASE-3B-2-1-VERIFICATION.md) for the current
+results, commands, screenshots and manual verification limits. The full suite with
+PostgreSQL is **122 passed, 0 failed, 0 skipped**; all **38 real PostgreSQL scenarios**
+pass. The translation regression and all three original overflow assertions are
+fixed. The new `tests/ui-stabilization-browser.mjs` adds the 224-case responsive
+matrix, adjacent breakpoints, short-screen accessibility and print/empty-state checks.
+All seven browser suites pass **68 checks**, with no failures or skips.
+
+[Phase 3B-2 verification](PHASE-3B-2-VERIFICATION.md) and
+[Phase 3B-1 verification](PHASE-3B-1-VERIFICATION.md) remain historical records;
+their outstanding translation/overflow findings are resolved by Phase 3B-2.1.
 
 # Historical verification — 17 October 2026
 

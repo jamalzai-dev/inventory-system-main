@@ -105,6 +105,18 @@ export function createGlobalSearch({ getState, onSelect, isUnavailable = () => f
     } else input.removeAttribute('aria-activedescendant');
   }
 
+  // Keep results inside the visible viewport, including a raised mobile keyboard.
+  function positionPopup() {
+    if (!opened) return;
+    const viewport = window.visualViewport;
+    const bottom = viewport ? viewport.offsetTop + viewport.height : window.innerHeight;
+    popup.style.maxBlockSize = `${Math.max(0, Math.min(480, bottom - input.getBoundingClientRect().bottom - 18))}px`;
+  }
+  window.addEventListener('resize', positionPopup);
+  window.addEventListener('scroll', positionPopup, { passive: true });
+  window.visualViewport?.addEventListener('resize', positionPopup);
+  window.visualViewport?.addEventListener('scroll', positionPopup);
+
   function outside(event) {
     if (!element.contains(event.target)) close();
   }
@@ -183,6 +195,7 @@ export function createGlobalSearch({ getState, onSelect, isUnavailable = () => f
     input.setAttribute('aria-expanded', 'true');
     if (!opened) document.addEventListener('pointerdown', outside);
     opened = true;
+    positionPopup();
   }
 
   function schedule() {

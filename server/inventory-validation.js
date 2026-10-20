@@ -19,7 +19,7 @@ export function requestKey(header) {
   if (!validUuid(header)) throw new InventoryApiError(400, 'A UUID Idempotency-Key header is required for creation.');
   return header.toLowerCase();
 }
-function text(value, field, required = false) {
+export function text(value, field, required = false) {
   if (value === null && !required) return null;
   if (typeof value !== 'string' || value.includes('\0') || /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/u.test(value)) {
     invalid(`${field} must be ${required ? 'a string' : 'a string or null'}.`);
@@ -57,7 +57,7 @@ export function validateWrite(resource, body, creating) {
   for (const key of Object.keys(body)) {
     if (key === 'quantity' && resource === 'materials' && creating) {
       const quantity = decimal(body[key], 'quantity', 3, false);
-      if (!/^0(?:\.0{1,3})?$/.test(quantity)) invalid('Initial stock must be zero. Stock operations are not available yet.');
+      if (!/^0(?:\.0{1,3})?$/.test(quantity)) invalid('Initial stock must be zero. Use a stock operation after creating the material.');
       result.quantity = quantity;
       continue;
     }

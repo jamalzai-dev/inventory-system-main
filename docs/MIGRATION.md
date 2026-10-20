@@ -1,5 +1,28 @@
 # Data preservation and migration
 
+## Current behavior — Phase 3B-3
+
+PostgreSQL is the authoritative inventory source. The current application does not
+write, import, restore or clear legacy browser inventory. It only offers separate
+legacy exports; an empty central database remains empty until authorized API writes.
+
+Keep the original browser profile and origin. Before moving an old installation,
+download its legacy v2 and raw exports and retain unedited copies. At the original
+file path, the updated `index.html` provides an export-only recovery screen. In the
+authenticated application, Backup provides separate central and legacy downloads.
+Never treat the central read-only JSON export as a complete PostgreSQL backup.
+
+There is no supported browser-to-PostgreSQL restore/import workflow in this phase.
+Any future migration requires explicit reconciliation and approval, including
+stock/history and currency decisions. Do not follow the historical restore steps
+below in the current application. See the
+[Phase 3B-3 report](PHASE-3B-3-VERIFICATION.md) for the implemented boundary.
+
+## Historical browser-storage design
+
+The remaining sections document the earlier localStorage application, before
+Phase 3B-3. Its restore, snapshot and local mutation behavior is no longer active.
+
 ## Existing single-page records
 
 The supported application still reads/writes **`university_it_inventory_v2`**. Material IDs, names, descriptions, quantities, categories, suppliers, equipment fields, timestamps and unknown extra fields survive normal updates and portable backup round trips. No automatic schema conversion or sample seeding runs. New installations start empty.

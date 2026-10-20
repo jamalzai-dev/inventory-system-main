@@ -1,12 +1,15 @@
 # Phase 3B-1: secure inventory writes
 
 This extends the existing [read API](INVENTORY-API.md). The nine write endpoints
-are implemented in the existing Express server; the frontend still uses
-localStorage. Do not feed these records into `app/data.js` directly.
+are implemented in the existing Express server and connected to the frontend in
+Phase 3B-3. The API store preserves decimal strings and NULLs; it does not feed
+these records into the legacy `app/data.js` repository. See the
+[integration report](PHASE-3B-3-VERIFICATION.md).
 
 **Manual prerequisite:** POST requires the separately reviewed
 [003-inventory-create-requests.sql](../db/migrations/003-inventory-create-requests.sql).
-It has not been applied to `university_inventory`. Existing inventory tables,
+It is already manually applied to `university_inventory`, confirmed by read-only
+inspection on 19 October 2026; do not rerun it. Existing inventory tables,
 constraints, timestamps, roles and credentials are not automatically changed.
 PATCH/DELETE and reads do not depend on the new receipt table.
 
@@ -105,7 +108,9 @@ Material POST omits `current_stock` from SQL and uses its database default zero.
 The optional POST `quantity` accepts only exact zero strings (`"0"`, `"0.0"`,
 `"0.00"`, `"0.000"`); its input scale is not stored, because the default supplies
 the stock. Nonzero stock is explicitly rejected. Every material PATCH `quantity`
-and every direct `current_stock` field is prohibited. No movements are inserted.
+and every direct `current_stock` field is prohibited. Metadata writes insert no
+movements. Phase 3B-2 now provides the separate [transactional stock API](STOCK-API.md)
+for additions and deductions after material creation.
 
 Category deletion relies on RESTRICT and returns 409 when materials reference it.
 Supplier deletion relies on SET NULL: materials remain, their supplier becomes
@@ -199,6 +204,11 @@ success is 204. `{"quantity":"1"}` in PATCH returns 422. Reusing the old version
 returns 409 with `{"error":"This record has changed. Reload it before trying again."}`.
 
 ## Manual migration instructions
+
+Status on 19 October 2026: read-only inspection confirmed migration 003 is already
+manually applied to the live database, with the required runtime SELECT/INSERT
+grants. Do not rerun it. The following instructions are retained for new databases.
+Phase 3B-2 needs no additional migration.
 
 1. Review migration 003. It adds only `public.inventory_create_requests` and grants
    the existing `inventory_app` role SELECT/INSERT on that table. No new schema

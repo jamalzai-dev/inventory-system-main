@@ -1,5 +1,6 @@
 // English keys and Pashto values are deliberately adjacent for language review.
 // User-entered records never pass through this dictionary.
+import { formatDecimal } from './decimal.js';
 export const messages = {
   headerDepartment: ["KDRU · IT Department", "KDRU · د معلوماتي ټکنالوژۍ څانګه"],
   healthyCountHint: ["Above reorder level", "د بیا فرمایش له کچې پورته"],
@@ -211,6 +212,63 @@ export const messages = {
   emptyCategory: ['This category has no materials.', 'په دې کټګورۍ کې توکي نشته.'],
   emptyCategoryHint: ['No inventory quantities are recorded for this category.', 'د دې کټګورۍ لپاره د موجودۍ شمېرې نه دي ثبت شوې.']
 };
+Object.assign(messages, {
+  unit: ['Unit', 'واحد'],
+  savingInventory: ['Saving… Please wait for server confirmation.', 'خوندي کېږي… د سرور تایید ته انتظار وکړئ.'],
+  healthyCountHint: ['Positive stock above threshold, or no threshold set', 'مثبته موجودي له کچې پورته، یا کچه نه ده ټاکل شوې'],
+  centralInventory: ['Central inventory', 'مرکزي زېرمتون'],
+  centralHint: ['Shared securely through the university server.', 'د پوهنتون د سرور له لارې په خوندي ډول شریکېږي.'],
+  loadingInventory: ['Loading central inventory…', 'مرکزي زېرمتون رااخیستل کېږي…'],
+  inventoryUnavailable: ['Inventory could not be loaded. Refresh to reconnect.', 'زېرمتون راوانخیستل شو. د بیا نښلېدو لپاره پاڼه تازه کړئ.'],
+  refreshInventory: ['Refresh inventory', 'زېرمتون تازه کړئ'],
+  serverUnreachable: ['Server unreachable / offline.', 'له سرور سره اړیکه نشته / آفلاین.'],
+  serviceUnavailable: ['The server or database is temporarily unavailable.', 'سرور یا ډیټابېس اوس د لاسرسي وړ نه دی.'],
+  staleReadOnly: ['Displayed records may be outdated. Changes are blocked until a successful refresh.', 'ښودل شوي معلومات ښايي زاړه وي. تر بریالي تازه کولو پورې بدلون نه شي کېدای.'],
+  sessionExpired: ['Your session expired. Sign in again.', 'ستاسو ناسته پای ته رسېدلې. بیا ننوځئ.'],
+  csrfFailed: ['The request could not be verified. Retry to obtain a fresh security token.', 'غوښتنه تایید نه شوه. د نوي امنیتي نښان لپاره بیا هڅه وکړئ.'],
+  invalidRequest: ['Check the entered values and selected records. The server rejected this request.', 'داخل شوي ارزښتونه او ټاکل شوي ثبتونه وګورئ. سرور دا غوښتنه ونه منله.'],
+  invalidResponse: ['The server returned an invalid response. Refresh or resolve the pending request.', 'د سرور ځواب سم نه و. تازه یې کړئ یا پاتې غوښتنه حل کړئ.'],
+  requestCancelled: ['Request cancelled. Refresh to try again.', 'غوښتنه لغوه شوه. د بیا هڅې لپاره تازه کړئ.'],
+  requestTooLarge: ['The request is too large. Shorten text or reduce the selection.', 'غوښتنه ډېره لویه ده. متن لنډ کړئ یا ټاکل شوي توکي کم کړئ.'],
+  tryLater: ['Please wait before trying again.', 'مهرباني وکړئ تر بلې هڅې لږ انتظار وکړئ.'],
+  recordConflict: ['This record changed on the server. Your draft is preserved. Reload the latest record and review before saving.', 'دا ثبت په سرور کې بدل شوی. ستاسو مسوده ساتل شوې. وروستی ثبت راواخلئ او تر خوندي کولو مخکې یې وګورئ.'],
+  reloadRecord: ['Discard draft and load latest record', 'مسوده پرېږدئ او وروستی ثبت راواخلئ'],
+  recordMissing: ['A selected record no longer exists. Refresh and review your selection.', 'یو ټاکل شوی ثبت نور نشته. تازه یې کړئ او خپل انتخاب وګورئ.'],
+  duplicateRecord: ['This name or serial number already exists.', 'دا نوم یا سریال شمېره له مخکې شته.'],
+  recordInUse: ['This record has related materials or movement history and cannot be deleted.', 'دا ثبت اړوند توکي یا د موجودۍ تاریخچه لري او نه شي ړنګېدای.'],
+  stockDeleteBlocked: ['Stock remains. Use Remove Materials before attempting deletion. Movement history also prevents deletion.', 'موجودي پاتې ده. د ړنګولو تر هڅې مخکې توکي کم کړئ. د موجودۍ تاریخچه هم د ړنګولو مخه نیسي.'],
+  stockOverflow: ['The resulting stock exceeds the permitted maximum.', 'پایله شوې موجودي له مجاز حد څخه زیاته ده.'],
+  retryConflict: ['This request identifier is already in use. Review the latest records before starting a new action.', 'د دې غوښتنې پېژندونکی کارول شوی. تر نوي کار مخکې وروستي ثبتونه وګورئ.'],
+  mutationBlocked: ['Changes are blocked. Refresh the connection and resolve any pending request first.', 'بدلونونه بند دي. لومړی اړیکه تازه او پاتې غوښتنه حل کړئ.'],
+  recoveryUnavailable: ['Safe request recovery is unavailable in this tab. Keep this tab open and contact IT before making changes.', 'په دې ټب کې د غوښتنې خوندي بیا ترلاسه کول نشته. ټب خلاص وساتئ او تر بدلون مخکې له معلوماتي ټکنالوژۍ سره اړیکه ونیسئ.'],
+  outcomeUncertain: ['A request is unresolved. Close any open form, then retry safely using its original identifier. Do not repeat it in another tab.', 'د یوې غوښتنې پایله نه ده معلومه. پرانیستې فورمه وتړئ، بیا د اصلي پېژندونکي په کارولو خوندي هڅه وکړئ. په بل ټب کې یې مه تکراروئ.'],
+  metadataUncertain: ['The change could not be confirmed. Refresh and review the latest record before editing again. Your open draft has been preserved.', 'د بدلون پایله تایید نه شوه. تر بیا سمولو مخکې تازه او وروستی ثبت وګورئ. ستاسو پرانیستې مسوده ساتل شوې.'],
+  retrySafely: ['Retry safely', 'په خوندي ډول بیا هڅه وکړئ'],
+  unableSave: ['Unable to complete the action. Please review and try again.', 'کار بشپړ نه شو. مهرباني وکړئ بیا یې وګورئ او هڅه وکړئ.'],
+  addStock: ['Add Stock', 'موجودي زیاته کړئ'],
+  reviewStock: ['Review stock addition', 'د موجودۍ زیاتول وګورئ'],
+  stockSaved: ['Stock added successfully.', 'موجودي په بریالیتوب زیاته شوه.'],
+  stockHint: ['Select up to 25 materials. Enter positive quantities with at most three decimal places. The entire batch is committed together.', 'تر ۲۵ توکو پورې وټاکئ. مثبتې شمېرې تر دریو اعشاري ځایونو ولیکئ. ټول لېست یوځای ثبتېږي.'],
+  stockPreviewHint: ['These are the latest displayed balances. The server checks current stock and commits the entire selection together.', 'دا وروستۍ ښودل شوې موجودي ده. سرور اوسنۍ موجودي ګوري او ټول انتخاب یوځای ثبتوي.'],
+  batchLimit: ['Select no more than 25 materials per operation.', 'په هر کار کې تر ۲۵ زیات توکي مه ټاکئ.'],
+  reason: ['Reason (optional)', 'لامل (اختیاري)'],
+  stockAction: ['Stock action', 'د موجودۍ کار'],
+  movementHistory: ['Stock movement history', 'د موجودۍ د بدلون تاریخچه'],
+  loadMore: ['Load more', 'نور راواخلئ'],
+  zeroStockHint: ['Name and category are required. New materials start at zero stock. Use Add Stock after saving.', 'نوم او کټګوري اړین دي. نوي توکي له صفر موجودۍ پیلېږي. تر خوندي کولو وروسته موجودي زیاته کړئ.'],
+  materialCreated: ['Material saved with zero stock. Use Add Stock to record a receipt.', 'توکی له صفر موجودۍ سره خوندي شو. د ترلاسه شوو توکو لپاره موجودي زیاته کړئ.'],
+  invalidDecimal: ['Enter an unsigned decimal within the allowed range: quantity up to 999999999.999; price up to 999999999.99.', 'په مجاز حد کې بې نښې اعشاري شمېره ولیکئ: مقدار تر 999999999.999؛ بیه تر 999999999.99.'],
+  removalQuantity: ['Enter a positive quantity with at most three decimal places.', 'مثبت مقدار تر دریو اعشاري ځایونو ولیکئ.'],
+  exactValueHint: ['AFN totals are exact, up to five decimal places. Materials without a price are excluded, not valued at zero.', 'د افغانیو مجموعه تر پنځو اعشاري ځایونو کره ده. بې بیې توکي له حسابه وتلي، صفر بیه نه لري.'],
+  lineValue: ['Line value (AFN)', 'د توکي ارزښت (افغانۍ)'],
+  centralExport: ['Export central inventory', 'مرکزي زېرمتون صادر کړئ'],
+  centralExportHint: ['Read-only JSON of current materials, categories and suppliers. Not a complete database backup or transaction snapshot; excludes movement history. Central restore is not available.', 'د اوسنیو توکو، کټګوریو او عرضه کوونکو یوازې لوستنی JSON. بشپړ ډیټابېس شاتړ یا د معاملې انځور نه دی؛ تاریخچه نه لري. مرکزي بېرته راګرځول نشته.'],
+  centralRestore: ['Central restore — deferred', 'مرکزي بېرته راګرځول — ځنډول شوي'],
+  centralRestoreHint: ['PostgreSQL backup and restore need a separately reviewed server procedure in Phase 3B-4. Browser JSON cannot restore central inventory.', 'د PostgreSQL شاتړ او بېرته راګرځول په 3B-4 پړاو کې جلا ارزول شوې کړنلاره غواړي. د براوزر JSON مرکزي زېرمتون نه شي راګرځولای.'],
+  legacyExport: ['Export legacy browser archive', 'د براوزر پخوانی آرشیف صادر کړئ'],
+  legacyBackup: ['Export legacy inventory JSON', 'د پخواني زېرمتون JSON صادر کړئ'],
+  legacySeparate: ['Old browser records are preserved separately. They are not central inventory and will not be imported automatically.', 'د براوزر پخواني ثبتونه جلا ساتل شوي. دا مرکزي زېرمتون نه دی او په خپله نه واردېږي.']
+});
 let language = 'en';
 export function setLanguage(value) { language = value === 'ps' ? 'ps' : 'en'; }
 export function t(key, values = {}) {
@@ -218,6 +276,6 @@ export function t(key, values = {}) {
   if (!pair) throw new Error(`Missing translation: ${key}`);
   return pair[language === 'ps' ? 1 : 0].replace(/\{(\w+)\}/g, (_, name) => String(values[name] ?? ''));
 }
-export function number(value) { return new Intl.NumberFormat(language === 'ps' ? 'ps-AF' : 'en-GB', { maximumFractionDigits: 2 }).format(value); }
-export function money(value) { return new Intl.NumberFormat(language === 'ps' ? 'ps-AF' : 'en-GB', { style: 'currency', currency: 'AFN', currencyDisplay: 'code' }).format(value); }
+export function number(value) { return formatDecimal(value, language === 'ps' ? 'ps-AF' : 'en-GB'); }
+export function money(value) { return value == null ? '—' : `AFN ${number(value)}`; }
 export function date(value) { return new Intl.DateTimeFormat(language === 'ps' ? 'ps-AF' : 'en-GB', { dateStyle: 'medium', timeStyle: 'short' }).format(value); }

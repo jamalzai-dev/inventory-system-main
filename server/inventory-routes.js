@@ -8,6 +8,13 @@ export function createInventoryRouter(inventory, csrf) {
   router.get('/categories', async (req, res) => res.json({ data: await inventory.listCategories() }));
   router.get('/suppliers', async (req, res) => res.json({ data: await inventory.listSuppliers() }));
   router.get('/materials', async (req, res) => res.json({ data: await inventory.listMaterials() }));
+  router.get('/stock-movements', async (req, res) => res.json(await inventory.listMovements(req.query)));
+  router.get('/materials/:id/movements', async (req, res) => res.json(await inventory.listMovements(req.query, recordId(req.params.id))));
+  router.post('/stock-operations', csrf, async (req, res) => {
+    res.locals.inventoryAction = 'stock';
+    const result = await inventory.operateStock(req.body, req.session.admin.id);
+    res.status(result.replayed ? 200 : 201).json({ data: result });
+  });
   router.get('/materials/:id', async (req, res) => {
     if (!validMaterialId(req.params.id)) return res.status(400).json({ error: 'Invalid material ID.' });
     const material = await inventory.findMaterial(req.params.id);
@@ -36,6 +43,9 @@ export function createInventoryRouter(inventory, csrf) {
     if (res.headersSent) return next(error);
     if (error instanceof InventoryApiError) return res.status(error.status).json({ error: error.message });
     if (error instanceof URIError) return res.status(400).json({ error: 'Invalid record ID.' });
+    if (res.locals.inventoryAction === 'stock' && ['23503', '23505', '23001'].includes(error.code)) {
+      return res.status(409).json({ error: 'A stock operation conflict prevented confirmation. Retry with the same operationId and unchanged request.' });
+    }
     if (error.code === '23505') {
       const messages = {
         categories_normalized_name_unique: 'A category with this name already exists.',
@@ -52,7 +62,9 @@ export function createInventoryRouter(inventory, csrf) {
     if (['40001', '40P01'].includes(error.code)) return res.status(409).json({ error: 'A concurrent change prevented this request. Reload before retrying.' });
     // Never include raw driver messages, SQL, credentials or records in logs/responses.
     console.error('Inventory service unavailable. Check PostgreSQL, migrations and permissions.');
-    res.status(503).json({ error: 'Service temporarily unavailable.' });
+    res.status(503).json({ error: res.locals.inventoryAction === 'stock'
+      ? 'Stock operation could not be confirmed. Retry with the same operationId and unchanged request.'
+      : 'Service temporarily unavailable.' });
   });
   return router;
 }

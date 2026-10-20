@@ -7,9 +7,10 @@ types and response wrappers remain unchanged. Historical statements below about
 unimplemented writes describe Phase 3A, not the current backend.
 
 The Express server now reads inventory through the existing PostgreSQL pool.
-The browser still uses `app/data.js` and `university_it_inventory_v2` localStorage.
-No frontend code, authentication policy, inventory records, or database schema was
-changed. Browser dummy data is not migrated. PostgreSQL inventory starts empty.
+Phase 3B-3 now connects the frontend through `app/api.js` and `app/store.js`.
+Legacy browser data is preserved separately without migration. See the
+[current integration report](PHASE-3B-3-VERIFICATION.md). The historical Phase 3A
+verification below did not change frontend code, authentication policy or schema.
 
 ## HTTP contract
 
@@ -187,7 +188,9 @@ verified with the existing synthetic authentication fixture. No production recor
 were modified. Frontend, translations, dashboard/search/report code, CSS, login
 assets, PWA files, dependencies, and `app/config/db.js` have no changes.
 
-Phase 3B remains unimplemented: decimal-safe frontend/API integration, deliberate
-null handling and validation, and separately authorized transactional inventory
-writes/stock movements. Browser dummy data does not need migration. Backup/restore
-replacement, deployment, UI changes and PWA work are also outside this phase.
+At the Phase 3A verification date, Phase 3B remained unimplemented. As of 19 October
+2026, [metadata writes](INVENTORY-WRITES.md) and [transactional stock APIs](STOCK-API.md)
+are implemented; see [current verification](PHASE-3B-2-VERIFICATION.md). Decimal-safe
+frontend integration and deliberate null handling remain Phase 3B-3 work. Browser
+dummy data does not need migration. Backup/restore replacement, deployment, UI
+changes and PWA work remain outside this backend phase.

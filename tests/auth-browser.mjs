@@ -42,10 +42,26 @@ try {
   });
   await check('desktop and mobile login layouts work in light and dark themes', async () => {
     await page.reload();
-    for (const colorScheme of ['light', 'dark']) for (const width of [320, 375, 390, 428, 768, 1024, 1440]) {
+    for (const colorScheme of ['light', 'dark']) for (const width of [320, 375, 390, 428, 720, 768, 1024, 1440]) {
       await page.setViewportSize({ width, height: 900 }); await page.emulateMedia({ colorScheme });
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
       await page.screenshot({ path: `tests/artifacts/login-${colorScheme}-${width}.png`, fullPage: true });
+    }
+  });
+  await check('short mobile login keeps inputs and actions reachable with comfortable touch targets', async () => {
+    await page.setViewportSize({ width: 320, height: 400 });
+    for (const colorScheme of ['light', 'dark']) {
+      await page.emulateMedia({ colorScheme });
+      for (const selector of ['#username', '#password', '#show-password', '#login-submit']) {
+        const control = page.locator(selector);
+        await control.scrollIntoViewIfNeeded();
+        const box = await control.boundingBox();
+        assert.ok(box.x >= 0 && box.x + box.width <= 320 && box.y >= 0 && box.y + box.height <= 400);
+        assert.ok(box.height >= 44 && box.width >= 44);
+      }
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+      assert.equal(await page.locator('#password').evaluate(node => getComputedStyle(node).fontSize), '16px');
+      await page.screenshot({ path: `tests/artifacts/login-short-${colorScheme}.png` });
     }
   });
   await check('login text, buttons and input boundaries meet selected contrast ratios', async () => {

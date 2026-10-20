@@ -5,11 +5,12 @@
   "scripts": {
     "start": "node tools/serve.mjs",
     "test": "node --test tests/*.test.js",
-    "test:browser": "node tests/browser.mjs",
-    "test:qa": "node tests/qa-browser.mjs",
+    "test:browser": "node tests/helpers/disposable-browser.mjs tests/browser.mjs",
+    "test:qa": "node tests/helpers/disposable-browser.mjs tests/qa-browser.mjs",
     "check:db": "node tools/check-db.mjs",
     "admin:set": "node tools/set-admin-credentials.mjs",
-    "test:auth:browser": "node tests/auth-browser.mjs"
+    "test:auth:browser": "node tests/helpers/disposable-browser.mjs tests/auth-browser.mjs",
+    "test:integration:browser": "node tests/integration-browser.mjs"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",

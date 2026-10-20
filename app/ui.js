@@ -22,9 +22,10 @@ export function localize(root = document) {
   root.querySelectorAll('[data-placeholder]').forEach(node => { node.placeholder = t(node.dataset.placeholder); });
 }
 export function table(headers, rows, emptyKey = 'empty', hint = 'emptyHint') {
-  const body = el('tbody');
-  if (rows.length) rows.forEach(row => body.append(el('tr', {}, row.map((cell, index) => el('td', { 'data-column': headers[index], 'data-label': t(headers[index]) }, cell)))));
-  else body.append(el('tr', {}, el('td', { colspan: headers.length }, el('div', { class: 'empty' }, text(emptyKey, 'h3'), text(hint, 'p')))));
+  // Explicit roles preserve table relationships when mobile CSS presents rows as cards.
+  const body = el('tbody', { role: 'rowgroup' });
+  if (rows.length) rows.forEach(row => body.append(el('tr', { role: 'row' }, row.map((cell, index) => el('td', { role: 'cell', 'data-column': headers[index], 'data-label': t(headers[index]) }, cell)))));
+  else body.append(el('tr', { role: 'row' }, el('td', { role: 'cell', colspan: headers.length }, el('div', { class: 'empty' }, text(emptyKey, 'h3'), text(hint, 'p')))));
   return el('div', { class: 'table-wrap', tabindex: '0', role: 'region', 'aria-label': t('scrollTable'), 'data-label': 'scrollTable' },
-    el('table', {}, el('thead', {}, el('tr', {}, headers.map(key => text(key, 'th', { scope: 'col' })))), body));
+    el('table', { role: 'table' }, el('thead', { role: 'rowgroup' }, el('tr', { role: 'row' }, headers.map(key => text(key, 'th', { scope: 'col', role: 'columnheader' })))), body));
 }

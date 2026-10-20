@@ -1,6 +1,6 @@
-// Authentication only; inventory persistence stays in the existing repository.
+// Authentication uses the same shared Admin session as the inventory APIs.
 let logoutPending = false;
-export async function logout() {
+export async function logout(clearProtected = () => {}) {
   if (logoutPending) return;
   logoutPending = true;
   try {
@@ -9,6 +9,7 @@ export async function logout() {
     const { csrfToken } = await tokenResponse.json();
     const response = await fetch('/api/auth/logout', { method: 'POST', headers: { 'X-CSRF-Token': csrfToken } });
     if (!response.ok) throw new Error();
+    clearProtected();
     location.replace('/login');
   } finally { logoutPending = false; }
 }
@@ -19,7 +20,10 @@ export async function verifySession() {
   checking = true;
   try {
     const response = await fetch('/api/auth/session', { cache: 'no-store' });
-    if (response.status === 401) location.replace('/login');
+    if (response.status === 401) {
+      window.dispatchEvent(new Event('inventory-session-expired'));
+      document.querySelector('#app')?.replaceChildren(); location.replace('/login');
+    }
   } catch { /* The server still enforces authentication on every protected request. */ }
   finally { checking = false; }
 }

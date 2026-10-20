@@ -1,4 +1,4 @@
-import { stockStatus } from './data.js';
+import { stockStatus, compare } from './decimal.js';
 import { number, t } from './i18n.js';
 import { el, text, userText } from './ui.js';
 
@@ -46,7 +46,7 @@ export function filterMaterials(state, { query = '', category = '', status = '',
     switch (sort) {
       case 'name': difference = compareText(a.name, b.name); break;
       case 'category': difference = compareText(categoryNames.get(a.categoryId), categoryNames.get(b.categoryId)); break;
-      case 'quantity': difference = a.quantity - b.quantity; break;
+      case 'quantity': difference = compare(a.quantity, b.quantity); break;
       case 'status': difference = compareText(stockStatus(a), stockStatus(b)); break;
       default: {
         const aTime = timestamp(a.createdAt), bTime = timestamp(b.createdAt);
