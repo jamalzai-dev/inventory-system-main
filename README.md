@@ -40,9 +40,11 @@ A central database without records displays an empty inventory. Add a category, 
 
 PostgreSQL is the only authoritative inventory source. The frontend uses authenticated APIs, exact decimal strings and server versions. Legacy `university_it_inventory_v2` and `ims_*` records remain untouched and are never automatically imported. Server failure blocks mutations and marks previous data stale. Uncertain POST requests retain their original identities in tab-scoped sessionStorage for explicit safe retry; keep that tab open until resolved. No inventory responses are persisted in browser storage.
 
-Central JSON exports are not complete database backups or restorable snapshots. Supervisor-reviewed PostgreSQL backup/restore and university LAN/HTTPS deployment remain future Phase 3B-4 work. See the [Phase 3B-3 implementation and verification report](docs/PHASE-3B-3-VERIFICATION.md).
+Central JSON exports are not complete database backups or restorable snapshots. Use the reviewed [PostgreSQL backup/recovery procedure](docs/BACKUP-AND-RECOVERY.md). Production scheduling and university LAN/HTTPS deployment still require administrator setup and supervised verification.
 
-The manifest and an unregistered service-worker draft prepare for future PWA work; installability/offline caching is not enabled. Pashto translations need fluent staff review. Do not deploy the archive directory.
+The PWA supports installation on secure origins, a public offline screen and explicit safe updates. It never caches private inventory pages or APIs and never queues offline edits. See [PWA installation](docs/PWA.md). Pashto translations need fluent staff review. Do not deploy the archive directory.
+
+Materials now have a direct Adjust Stock action with an exact resulting-balance preview and English/Pashto numeral input. Optional zero-stock archiving preserves history and requires manual review/application of [migration 004](db/migrations/004-material-archive.sql); it was not applied to the university database. See the [staff guide](docs/STAFF-GUIDE.md), [system overview](docs/SYSTEM-OVERVIEW.md), [administrator guide](docs/ADMINISTRATOR-GUIDE.md) and [LAN checklist](docs/LAN-DEPLOYMENT-CHECKLIST.md).
 
 - [Audit and foundation decision](docs/AUDIT.md)
 - [Migration and recovery](docs/MIGRATION.md)

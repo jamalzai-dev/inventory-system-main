@@ -8,6 +8,8 @@ import { logout } from './auth.js';
 import { icon } from './icons.js';
 import { createGlobalSearch } from './search.js';
 import { summarizeInventory, filterMaterials, renderInventoryCharts } from './dashboard.js';
+import { stockPreview } from './stock-input.js';
+import { initializePwa } from './pwa.js';
 
 const api = createApi({ onUnavailable: error => {
   if (store.status === 'auth') return;
@@ -28,6 +30,9 @@ const pages = ['dashboard', 'materials', 'categories', 'suppliers', 'reports', '
 let page = pages.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'dashboard';
 let query = '', categoryFilter = '', statusFilter = '', materialSort = 'recent';
 let reportCategory = '', refreshRemovalLabels = null;
+let refreshStockForm = null;
+let showArchived = false;
+const activeState = () => ({ ...state, materials: state.materials.filter(m => !m.archived) });
 let opener, noticeTimer, pendingConfirmation;
 // Reserved for the official KDRU IT logo. Insert an <img src="assets/kdru-it-logo.svg"
 // alt=""> inside .logo-space when the approved asset is supplied; keep it empty until then.
@@ -45,7 +50,7 @@ const pageDescription = el('p', { class: 'muted' });
 const menu = el('button', { type: 'button', class: 'button menu-button', 'data-label': 'menu', 'aria-label': t('menu'), 'aria-controls': 'navigation', 'aria-expanded': 'false', onclick: () => toggleMenu() }, icon('menu'));
 const headerTitle = el('span', { class: 'header-page' });
 const globalSearch = createGlobalSearch({
-  getState: () => state,
+  getState: activeState,
   isUnavailable: () => store.status !== 'ready',
   onSelect: (collection, id) => {
     navigate(collection);
@@ -57,8 +62,9 @@ const heading = el('header', { class: 'topbar' }, el('div', { class: 'header-con
 const content = el('div', { id: 'page-content' });
 const errorBanner = el('div', { class: 'notice error', role: 'alert', hidden: true });
 const connectionBanner = el('div', { class: 'notice connection-status', role: 'status', 'aria-live': 'polite', hidden: true });
+const updateBanner = el('div', { class: 'notice connection-status', role: 'status', hidden: true });
 const main = el('main', { id: 'main', tabindex: '-1' }, heading, el('div', { class: 'content' }, errorBanner,
-  connectionBanner,
+  connectionBanner, updateBanner,
   el('div', { class: 'page-heading' }, el('div', {}, pageTitle, pageDescription), el('div', { id: 'page-actions' })), content));
 const toast = el('div', { class: 'toast', role: 'status', 'aria-live': 'polite', hidden: true });
 const dialog = el('dialog', { 'aria-labelledby': 'dialog-title', class: 'record-dialog' });
@@ -135,7 +141,7 @@ sidebar.addEventListener('keydown', event => {
 });
 function navigate(next, { preserveFilters = false } = {}) {
   page = next;
-  if (!preserveFilters) { query = ''; categoryFilter = ''; statusFilter = ''; materialSort = 'recent'; }
+  if (!preserveFilters) { query = ''; categoryFilter = ''; statusFilter = ''; materialSort = 'recent'; showArchived = false; }
   history.replaceState(null, '', `#${next}`);
   toggleMenu(false); renderPage(); pageTitle.focus();
   if (!dialog.open && !confirmDialog.open) void refreshInventory();
@@ -159,11 +165,18 @@ function savePreferences() {
 function badge(m) { const key = stockStatus(m); return text(key, 'span', { class: `pill ${key}` }); }
 function categoryName(id) { return state.categories.find(x => x.id === id)?.name ?? '—'; }
 function materialName(m) { return el('div', { class: 'record-name' }, el('span', { class: 'record-icon', 'aria-hidden': true }, icon('package')), el('div', {}, userText(m.name), el('small', { class: 'muted' }, m.serial ? el('bdi', { dir: 'ltr' }, m.serial) : text('noSerial')))); }
+function viewCategory(id) {
+  query = ''; statusFilter = ''; categoryFilter = id;
+  showArchived = !state.materials.some(m => m.categoryId === id && !m.archived) && state.materials.some(m => m.categoryId === id && m.archived);
+  navigate('materials', { preserveFilters: true });
+}
 function rowActions(collection, record) {
   const edit = button('edit', () => run(() => openRecord(collection, record.id)), 'small', { disabled: store.blocked, title: t('edit'), 'aria-label': `${t('edit')}: ${record.name}` });
   const remove = button('delete', () => deleteRecord(collection, record), 'small danger-text', { disabled: store.blocked, title: t('delete'), 'aria-label': `${t('delete')}: ${record.name}` });
   edit.prepend(icon('edit')); remove.prepend(icon('trash'));
-  return el('div', { class: 'row-actions' }, edit, remove);
+  return el('div', { class: 'row-actions' }, edit, ...(collection === 'materials' ? [button('adjustStock', () => openAdjustment(record), 'small labeled-action', { disabled: store.blocked || record.archived, 'aria-label': `${t('adjustStock')}: ${record.name}` }),
+    ...(record.archiveSupported ? [button(record.archived ? 'restoreMaterial' : 'archiveMaterial', () => archiveRecord(record), 'small labeled-action', { disabled: store.blocked })] : [])] : []),
+    ...(collection === 'categories' ? [button('viewMaterials', () => viewCategory(record.id), 'small labeled-action')] : []), remove);
 }
 function identifyRows(wrapper, records) {
   wrapper.querySelectorAll('tbody tr').forEach((row, index) => { if (records[index]) row.dataset.recordId = records[index].id; });
@@ -190,7 +203,7 @@ function materialFilterControls(draw, { includeSort = true } = {}) {
   return [category, status, ...(includeSort ? [sort] : [])];
 }
 function renderDashboard() {
-  const summary = summarizeInventory(state);
+  const summary = summarizeInventory(activeState());
   const stats = [['totalMaterials', summary.total, 'registered', 'package'], ['good', summary.good, 'healthyCountHint', 'check'], ['low', summary.low, 'lowCountHint', 'alert'], ['out', summary.out, 'outCountHint', 'circleOff']];
   const cards = el('div', { class: 'stats' }, stats.map(([key, value, hint, symbol], index) => el('section', { class: `stat stat-${index}` }, el('div', { class: 'stat-heading' }, text(key, 'h2'), el('span', { class: `stat-icon ${key}`, 'aria-hidden': true }, icon(symbol))), el('strong', { class: 'stat-value' }, number(value)), text(hint, 'p'))));
   const result = el('div');
@@ -204,16 +217,16 @@ function renderDashboard() {
   const preview = card('materialInventory', 'inventoryPreviewHint', el('div', {}, filters, result, count), el('div', { class: 'card-actions' }, filter, seeAll));
   preview.classList.add('inventory-preview');
   function draw() {
-    const matches = filterMaterials(state, { category: categoryFilter, status: statusFilter, sort: materialSort });
+    const matches = filterMaterials(activeState(), { category: categoryFilter, status: statusFilter, sort: materialSort });
     const rows = matches.slice(0, 6);
     result.replaceChildren(identifyRows(table(['material','categoryId','quantity','location','status','actions'], rows.map(m => [...materialRows([m])[0], rowActions('materials', m)])), rows));
     count.textContent = t('previewCount', { count: number(rows.length), total: number(matches.length) });
   }
   draw();
-  content.append(cards, renderInventoryCharts(state), preview);
+  content.append(cards, renderInventoryCharts(activeState()), preview);
 }
 function filtered(collection) {
-  if (collection === 'materials') return filterMaterials(state, { query, category: categoryFilter, status: statusFilter, sort: materialSort });
+  if (collection === 'materials') return filterMaterials({ ...state, materials: state.materials.filter(m => !!m.archived === showArchived) }, { query, category: categoryFilter, status: statusFilter, sort: materialSort });
   const needle = query.normalize('NFKC').toLocaleLowerCase().trim();
   const fields = collection === 'categories' ? ['name','description'] : ['name','contact','phone','email','address'];
   return state[collection].filter(record => !needle || fields.some(key => String(record[key] || '').normalize('NFKC').toLocaleLowerCase().includes(needle)));
@@ -224,6 +237,10 @@ function renderRecords(collection) {
   const result = el('div');
   const count = el('p', { class: 'result-count', 'aria-live': 'polite' });
   if (collection === 'materials') filters.append(...materialFilterControls(draw));
+  if (collection === 'materials' && state.materials.some(m => m.archiveSupported)) {
+    const archived = el('input', { type: 'checkbox', checked: showArchived, onchange: () => { showArchived = archived.checked; draw(); } });
+    filters.append(el('label', { class: 'archive-filter' }, archived, text('archivedMaterials')));
+  }
   function draw() {
     const rows = filtered(collection);
     count.textContent = t('count', { count: number(rows.length) });
@@ -236,6 +253,7 @@ function renderRecords(collection) {
   content.append(el('section', { class: 'card' }, filters, result, count)); draw();
 }
 function renderReports() {
+  const materials = activeState().materials;
   const categorySelect = el('select', { id: 'print-category' }, el('option', { value: '' }, t('choose')), state.categories.map(c => el('option', { value: c.id }, c.name)));
   categorySelect.value = reportCategory;
   categorySelect.addEventListener('change', () => { reportCategory = categorySelect.value; });
@@ -244,13 +262,13 @@ function renderReports() {
       if (!reportCategory) { reportError(new InventoryError('selectPrintCategory')); categorySelect.focus(); return; }
       void run(() => printReport(reportCategory));
     })));
-  const status = el('dl', { class: 'summary-list' }, ['good','low','out'].map(key => [text(key, 'dt'), el('dd', {}, number(state.materials.filter(m => stockStatus(m) === key).length))]));
-  const groups = el('dl', { class: 'summary-list' }, state.categories.map(c => [el('dt', {}, userText(c.name)), el('dd', {}, number(state.materials.filter(m => m.categoryId === c.id).length))]));
+  const status = el('dl', { class: 'summary-list' }, ['good','low','out'].map(key => [text(key, 'dt'), el('dd', {}, number(materials.filter(m => stockStatus(m) === key).length))]));
+  const groups = el('dl', { class: 'summary-list' }, state.categories.map(c => [el('dt', {}, userText(c.name)), el('dd', {}, number(materials.filter(m => m.categoryId === c.id).length))]));
   if (!state.categories.length) groups.append(text('empty', 'p'));
-  const value = inventoryValue(state.materials);
+  const value = inventoryValue(materials);
   content.append(el('div', { class: 'report-grid' }, card('status', null, status), card('categories', null, groups), card('inventoryValue', null, el('div', { class: 'card-body' }, el('bdi', { class: 'value', dir: 'auto' }, money(value)), text('valueHint', 'p', { class: 'muted' })))),
     text('exactValueHint', 'p', { class: 'muted' }),
-    card('attention', null, table(['material','categoryId','quantity','location','status'], materialRows(state.materials.filter(m => stockStatus(m) !== 'good')), 'healthy', 'healthyHint')));
+    card('attention', null, table(['material','categoryId','quantity','location','status'], materialRows(materials.filter(m => stockStatus(m) !== 'good')), 'healthy', 'healthyHint')));
   content.append(button('movementHistory', () => run(() => openMovements())));
 }
 function download(payload, filename) {
@@ -322,6 +340,7 @@ function renderPage() {
 function closeDialog() { dialog.close(); }
 dialog.addEventListener('close', () => {
   refreshRemovalLabels = null;
+  if (!dialog.open) refreshStockForm = null;
   // Native close events are queued: do not steal focus from a new user action.
   if (document.activeElement === document.body || dialog.contains(document.activeElement)) {
     if (opener?.isConnected) opener.focus(); else pageTitle.focus();
@@ -350,7 +369,7 @@ function openRemoval(type = 'remove') {
   function filterOptions() {
     const previous = select.value;
     const needle = search.value.trim().toLocaleLowerCase();
-    const matches = state.materials.filter(m => [m.name, m.serial, m.location, categoryName(m.categoryId)].some(value => String(value || '').toLocaleLowerCase().includes(needle)));
+    const matches = state.materials.filter(m => !m.archived && [m.name, m.serial, m.location, categoryName(m.categoryId)].some(value => String(value || '').toLocaleLowerCase().includes(needle)));
     select.replaceChildren(el('option', { value: '' }, t('selectMaterial')), ...matches.map(m => el('option', { value: m.id }, `${m.name} · ${m.serial || m.location || '—'}`)));
     select.value = matches.some(m => m.id === previous) ? previous : '';
     showAvailable();
@@ -366,8 +385,14 @@ function openRemoval(type = 'remove') {
     const inputId = `removal-quantity-${selected.size}-${createId()}`;
     const input = el('input', { id: inputId, type: 'text', inputmode: 'decimal', required: true, dir: 'ltr', 'aria-describedby': 'removal-errors' });
     const stock = el('p', { class: 'muted' }, text('availableQuantity'), ': ', number(material.quantity), ' ', unit(material));
+    const preview = el('p', { class: 'stock-result', 'aria-live': 'polite' });
+    input.addEventListener('input', () => {
+      try { const next = stockPreview(material.quantity, input.value, type); preview.replaceChildren(text('resultingQuantity'), ': ', number(next.result)); input.removeAttribute('aria-invalid'); }
+      catch (error) { preview.replaceChildren(text(error.message === 'invalidDecimal' ? 'removalQuantity' : error.message)); input.setAttribute('aria-invalid', 'true'); }
+    });
     const row = el('section', { class: 'card card-body', 'data-removal-id': material.id }, el('h3', {}, userText(material.name)), el('small', {}, userText(material.serial || material.location)), stock,
       el('div', { class: 'field' }, el('label', { for: inputId }, text(type === 'add' ? 'quantity' : 'removalAmount')), input),
+      preview,
       button('excludeRemoval', () => { selected.delete(material.id); row.remove(); select.focus(); }, 'small'));
     selected.set(material.id, { input, stock, material }); rows.append(row); input.focus();
   }
@@ -384,12 +409,8 @@ function openRemoval(type = 'remove') {
     try {
       const entries = [...selected].map(([id, { input }]) => {
         input.removeAttribute('aria-invalid');
-        let valid = false;
-        try { valid = units(input.value) > 0n; } catch { /* Exact validation below. */ }
-        if (!valid) {
-          input.setAttribute('aria-invalid', 'true'); input.focus(); throw new InventoryError('removalQuantity');
-        }
-        return { materialId: id, quantity: input.value };
+        try { return { materialId: id, quantity: stockPreview(state.materials.find(m => m.id === id).quantity, input.value, type).quantity }; }
+        catch (error) { input.setAttribute('aria-invalid', 'true'); input.focus(); throw new InventoryError(error.message === 'invalidDecimal' ? 'removalQuantity' : error.message); }
       });
       if (!entries.length) throw new InventoryError('removalEmpty');
       const summary = el('div', {}, text('stockPreviewHint', 'p'), table(['material','availableQuantity', type === 'add' ? 'quantity' : 'removalAmount'], entries.map(entry => {
@@ -397,7 +418,11 @@ function openRemoval(type = 'remove') {
         return [userText(m.name), el('span', {}, number(m.quantity), ' ', unit(m)), number(entry.quantity)];
       })));
       reviewing = true;
-      confirmDialog.addEventListener('close', () => { reviewing = false; }, { once: true });
+      dialog.close(); // Review replaces the form; never stack two stock dialogs.
+      confirmDialog.addEventListener('close', () => {
+        reviewing = false;
+        if (!completed && store.status !== 'auth' && !dialog.open) { dialog.showModal(); selected.values().next().value?.input.focus(); }
+      }, { once: true });
       confirmAction(type === 'add' ? 'addStock' : 'confirmRemoval', summary, type === 'add' ? 'addStock' : 'confirmRemoval', async () => {
         if (completed) return;
         completed = true;
@@ -413,6 +438,44 @@ function openRemoval(type = 'remove') {
     for (const { stock, material } of selected.values()) stock.replaceChildren(text('availableQuantity'), ': ', number(material.quantity), ' ', unit(material));
   };
   filterOptions(); search.focus();
+}
+function openAdjustment(record) {
+  if (store.blocked || record.archived) return;
+  let type = 'remove', saving = false;
+  const input = el('input', { id: 'adjust-quantity', type: 'text', inputmode: 'decimal', dir: 'ltr', required: true, 'aria-describedby': 'adjust-result adjust-errors' });
+  const reason = el('input', { id: 'adjust-reason', maxlength: 500 });
+  const result = el('p', { id: 'adjust-result', class: 'stock-result', role: 'status' });
+  const errors = el('div', { id: 'adjust-errors', class: 'notice error', role: 'alert', hidden: true });
+  const available = el('p', { class: 'stock-available' });
+  const submit = el('button', { class: 'button primary', type: 'submit' });
+  const choices = el('div', { class: 'stock-choices', role: 'group', 'aria-label': t('adjustStock') });
+  const form = el('form', { id: 'adjust-form', novalidate: true }, userText(record.name, 'h3'), available, choices,
+    el('div', { class: 'field' }, text('quantity', 'label', { for: 'adjust-quantity' }), input), result,
+    el('div', { class: 'field' }, text('optionalReason', 'label', { for: 'adjust-reason' }), reason), errors,
+    el('div', { class: 'dialog-footer' }, button('cancel', closeDialog), submit));
+  function update() {
+    const current = state.materials.find(m => m.id === record.id) || record;
+    available.replaceChildren(text('availableQuantity'), ': ', number(current.quantity), ' ', userText(current.unit || ''));
+    submit.replaceChildren(text(type === 'add' ? 'confirmAddition' : 'confirmRemoval'));
+    choices.querySelectorAll('button').forEach(node => node.setAttribute('aria-pressed', String(node.dataset.type === type)));
+    try { const preview = stockPreview(current.quantity, input.value, type); result.replaceChildren(text('resultingQuantity'), ': ', number(preview.result)); input.removeAttribute('aria-invalid'); submit.disabled = store.blocked; }
+    catch (error) { result.replaceChildren(...(input.value ? [text(error.message === 'invalidDecimal' ? 'removalQuantity' : error.message)] : [])); if (input.value) input.setAttribute('aria-invalid', 'true'); submit.disabled = true; }
+  }
+  for (const value of ['add', 'remove']) choices.append(button(value === 'add' ? 'addStock' : 'removeStock', () => { type = value; update(); input.focus(); }, '', { 'data-type': value }));
+  input.addEventListener('input', update);
+  form.addEventListener('submit', async event => {
+    event.preventDefault(); if (saving || store.blocked) return;
+    errors.hidden = true;
+    try {
+      const current = state.materials.find(m => m.id === record.id) || record;
+      const preview = stockPreview(current.quantity, input.value, type);
+      saving = true; setFormBusy(form, true);
+      await store.stock(type, [{ materialId: record.id, quantity: preview.quantity }], reason.value.trim() || null);
+      notify(type === 'add' ? 'stockSaved' : 'removalSaved'); closeDialog();
+    } catch (error) { reportError(error instanceof ApiError ? error : new InventoryError(error.message), errors); }
+    finally { saving = false; setFormBusy(form, false); update(); }
+  });
+  openDialog('adjustStock', form); refreshStockForm = update; update(); input.focus();
 }
 const recordFields = {
   materials: ['name','categoryId','reorderLevel','location','condition','serial','unit','responsible','supplierId','price','purchaseDate','description'],
@@ -505,15 +568,35 @@ confirmDialog.addEventListener('close', () => {
   }
 });
 function deleteRecord(collection, record) {
-  confirmAction('confirmDelete', el('div', {}, el('p', { class: 'record-name' }, userText(record.name)), text('deleteHint', 'p')), 'delete', async () => {
+  const restricted = (collection === 'categories' && state.materials.some(m => m.categoryId === record.id)) || (collection === 'materials' && (units(record.quantity) > 0n || record.hasHistory));
+  const body = el('div', {}, el('p', { class: 'record-name' }, userText(record.name)), text('deleteHint', 'p'));
+  if (collection === 'categories' && state.materials.some(m => m.categoryId === record.id)) {
+    body.append(text('categoryDeleteBlocked', 'p'), button('viewMaterials', () => { confirmDialog.close(); viewCategory(record.id); }));
+  }
+  if (collection === 'materials' && (units(record.quantity) > 0n || record.hasHistory)) {
+    body.append(text(units(record.quantity) > 0n ? 'stockDeleteBlocked' : 'historyDeleteBlocked', 'p'));
+    if (units(record.quantity) > 0n) body.append(button('adjustStock', () => { confirmDialog.close(); openAdjustment(record); }));
+    else if (record.archiveSupported) body.append(button('archiveMaterial', () => { confirmDialog.close(); archiveRecord(record); }));
+    else body.append(text('archiveUnavailable', 'p'));
+  }
+  confirmAction('confirmDelete', body, 'delete', async () => {
     await store.remove(collection, record); notify('deleted');
+  });
+  if (restricted) confirmDialog.querySelector('.primary').disabled = true;
+}
+function archiveRecord(record) {
+  if (store.blocked) return;
+  if (!record.archived && units(record.quantity) > 0n) { reportError(new ApiError('archiveStockBlocked')); return; }
+  confirmAction(record.archived ? 'restoreMaterial' : 'archiveMaterial', text('archiveHint', 'p'), record.archived ? 'restoreMaterial' : 'archiveMaterial', async () => {
+    await store.submit({ method: 'PATCH', path: `/api/materials/${record.id}/archive`, headers: { 'If-Match': `"${record.version}"` }, body: { archived: !record.archived } });
+    notify('saved');
   });
 }
 async function printReport(categoryId = null) {
   if (!(await refreshInventory()) || store.pending) throw new ApiError('mutationBlocked');
   const category = categoryId === null ? null : state.categories.find(c => c.id === categoryId);
   if (categoryId !== null && !category) { reportError(new InventoryError('selectPrintCategory')); return; }
-  const materials = category ? state.materials.filter(m => m.categoryId === category.id) : state.materials;
+  const materials = activeState().materials.filter(m => !category || m.categoryId === category.id);
   printArea.replaceChildren(text('app', 'h1'), ...(category ? [el('h2', {}, text('categoryId'), ': ', userText(category.name))] : []),
     el('p', {}, text('generated'), ': ', date(new Date())), el('p', {}, text('inventoryValue'), ': ', money(inventoryValue(materials))), text('exactValueHint', 'p'),
     table(['material','categoryId','quantity','price','lineValue','location','condition','responsible','status'], materials.map(m => [userText(m.name), userText(categoryName(m.categoryId)), number(m.quantity), money(m.price), m.price == null ? '—' : money(product(m.quantity, m.price)), userText(m.location), conditionText(m.condition), userText(m.responsible || '—'), text(stockStatus(m))]), category ? 'emptyCategory' : 'empty', category ? 'emptyCategoryHint' : 'emptyHint'));
@@ -548,6 +631,7 @@ store.subscribe(() => {
   const changed = state !== store.data || lastStoreStatus !== store.status || lastStoreBlocked !== store.blocked;
   state = store.data; lastStoreStatus = store.status; lastStoreBlocked = store.blocked;
   updateConnection();
+  refreshStockForm?.();
   if (!changed) return;
   globalSearch.refresh();
   // Forms live outside content and retain their draft/version during refreshes.
@@ -570,7 +654,7 @@ function refreshWhenIdle() {
   if (!document.hidden && !dialog.open && !confirmDialog.open && !historyDialog.open && !contentDraftActive()) void refreshInventory();
 }
 window.addEventListener('focus', refreshWhenIdle);
-window.addEventListener('online', refreshWhenIdle);
+window.addEventListener('online', () => { void refreshInventory(); });
 window.addEventListener('offline', () => { store.status = store.ready ? 'stale' : 'error'; store.error = new ApiError('serverUnreachable'); store.emit(); });
 window.addEventListener('pagehide', () => {
   store.clear(); dialog.close(); confirmDialog.close(); historyDialog.close(); globalSearch.close(); printArea.replaceChildren();
@@ -585,3 +669,4 @@ document.addEventListener('visibilitychange', refreshWhenIdle);
 window.addEventListener('beforeunload', event => { if (store.pending || store.busy) { event.preventDefault(); event.returnValue = ''; } });
 setInterval(refreshWhenIdle, 60000);
 renderPage(); updateConnection(); document.title = t('app'); void refreshInventory();
+void initializePwa(updateBanner, () => !store.pending && !store.busy && !store.journalError && !dialog.open && !confirmDialog.open && !historyDialog.open && !contentDraftActive());

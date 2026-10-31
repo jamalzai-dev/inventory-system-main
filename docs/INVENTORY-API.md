@@ -1,3 +1,21 @@
+# Current additions — Phase 3B-4
+
+Material responses also include boolean `archived`, `archiveSupported` and
+`hasHistory` fields. Without migration 004, archived defaults to false and archive
+support is false; ordinary reads/writes remain compatible with the previous schema.
+Collections still include archived records. The frontend hides them from active
+dashboard/search/reports and offers an archived-material view.
+
+`PATCH /api/materials/:id/archive` accepts exactly `{ "archived": true }` or false,
+with the existing authenticated session, CSRF token and quoted `If-Match` version.
+It returns `{ "data": material }`. Archiving requires zero stock and manually
+reviewed [migration 004](../db/migrations/004-material-archive.sql). Missing migration,
+stale version or positive stock returns 409; invalid body returns 422; missing record
+returns 404. History and relationships are retained. Reactivation uses the same route.
+The migration has **not** been applied to the university database by this phase.
+
+See [verification](PHASE-3B-4-VERIFICATION.md) and [administration](ADMINISTRATOR-GUIDE.md).
+
 # Phase 3A: authenticated PostgreSQL inventory reads
 
 This preserves the Phase 3A findings and verification history. Phase 3B-1 adds

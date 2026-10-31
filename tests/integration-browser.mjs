@@ -100,7 +100,7 @@ try {
     await page.locator('#removal-material').selectOption(material.id); await page.locator('#add-removal').click();
     await page.locator('[id^=removal-quantity]').fill('0.125');
     await page.locator('#removal-form [type=submit]').click(); await page.locator('.confirm-dialog .primary').dblclick();
-    await page.locator('.record-dialog').waitFor({ state: 'hidden' }); await ready();
+    await page.locator('.confirm-dialog').waitFor({ state: 'hidden' }); await ready();
     assert.equal((await list('materials'))[0].quantity, '0.125');
     assert.equal((await db.owner.query('SELECT count(*) FROM public.stock_movements')).rows[0].count, '1');
     await page.locator('#page-actions [data-i18n=movementHistory]').click();
@@ -148,10 +148,13 @@ try {
     assert.equal(await b.page.locator(`[data-record-id="${material.id}"]`).evaluate(node => node === document.activeElement), true);
   });
   await check('category references and stock/history deletion restrictions are shown meaningfully', async () => {
-    await go('categories'); await page.locator('tbody [data-i18n=delete]').click(); await page.locator('.confirm-dialog .primary').click();
-    await page.locator('[data-i18n=recordInUse]').waitFor(); await page.locator('.confirm-dialog [data-i18n=cancel]').click();
-    await go('materials'); await page.locator('tbody [data-i18n=delete]').click(); await page.locator('.confirm-dialog .primary').click();
-    await page.locator('[data-i18n=stockDeleteBlocked]').waitFor(); await page.locator('.confirm-dialog [data-i18n=cancel]').click();
+    await go('categories'); await page.locator('tbody [data-i18n=delete]').click();
+    assert.equal(await page.locator('.confirm-dialog .primary').isDisabled(), true);
+    await page.locator('.confirm-dialog [data-i18n=categoryDeleteBlocked]').waitFor(); await page.locator('.confirm-dialog [data-i18n=cancel]').click();
+    assert.equal((await api(a.context, `categories/${category.id}`, 'DELETE', undefined, { 'If-Match': `"${category.version}"` })).status(), 409);
+    await go('materials'); await page.locator('tbody [data-i18n=delete]').click();
+    assert.equal(await page.locator('.confirm-dialog .primary').isDisabled(), true);
+    await page.locator('.confirm-dialog [data-i18n=stockDeleteBlocked]').waitFor(); await page.locator('.confirm-dialog [data-i18n=cancel]').click();
   });
   await check('batch deduction is atomic and insufficient stock leaves every balance unchanged', async () => {
     second = await create('materials', { name: 'Second cable', categoryId: category.id });
@@ -161,13 +164,14 @@ try {
       await page.locator('#removal-material').selectOption(id); await page.locator('#add-removal').click();
       await page.locator(`[data-removal-id="${id}"] input`).fill(quantity);
     }
-    await page.locator('#removal-form [type=submit]').click(); await page.locator('.confirm-dialog .primary').click();
-    await page.locator('[data-i18n=removalExcess]').waitFor();
+    await page.locator('#removal-form [type=submit]').click();
+    await page.locator('#removal-errors [data-i18n=removalExcess]').waitFor();
+    // The UI now prevents a known-invalid batch; independently verify server rollback.
+    assert.equal((await stock([{ materialId: material.id, quantity: '0.1' }, { materialId: second.id, quantity: '3' }], 'remove')).status(), 409);
     assert.equal((await list('materials')).find(row => row.id === material.id).quantity, '0.125');
-    await page.locator('.confirm-dialog [data-i18n=cancel]').click();
     await page.locator(`[data-removal-id="${second.id}"] input`).fill('0.5');
     await page.locator('#removal-form [type=submit]').click(); await page.locator('.confirm-dialog .primary').click();
-    await page.locator('.record-dialog').waitFor({ state: 'hidden' });
+    await page.locator('.confirm-dialog').waitFor({ state: 'hidden' });
     const rows = await list('materials'); assert.equal(rows.find(row => row.id === material.id).quantity, '0.025'); assert.equal(rows.find(row => row.id === second.id).quantity, '2.0');
   });
   await check('lost committed stock response is resolved after reload with same UUID and no duplicate deduction', async () => {
@@ -234,7 +238,13 @@ try {
     assert.equal((await list('materials')).find(row => row.id === second.id).quantity, '0.375');
     const failures = await page.locator('.confirm-dialog [data-i18n=removalExcess]').count() + await b.page.locator('.confirm-dialog [data-i18n=removalExcess]').count();
     assert.equal(failures, 1);
-    for (const p of [page, b.page]) { await p.keyboard.press('Escape'); await p.keyboard.press('Escape'); }
+    for (const p of [page, b.page]) {
+      if (await p.locator('.confirm-dialog').isVisible()) {
+        await p.keyboard.press('Escape'); await p.locator('.record-dialog').waitFor({ state: 'visible' });
+        assert.equal(await p.locator('dialog[open]').count(), 1);
+        await p.keyboard.press('Escape'); await p.locator('.record-dialog').waitFor({ state: 'hidden' });
+      }
+    }
   });
   await check('service failure differs from empty inventory and an explicit refresh recovers safely', async () => {
     await go('dashboard');
@@ -300,7 +310,8 @@ try {
     await b.context.clearCookies(); await go('settings');
     await b.page.evaluate(() => window.dispatchEvent(new Event('focus'))); await b.page.waitForURL('**/login');
     assert.equal(await b.page.locator('[data-record-id]').count(), 0);
-    assert.deepEqual(await page.evaluate(async () => await caches.keys()), []);
+    const cached = await page.evaluate(async () => (await Promise.all((await caches.keys()).map(async name => (await (await caches.open(name)).keys()).map(r => new URL(r.url).pathname)))).flat());
+    for (const path of cached) assert.ok(['/offline.html','/offline.css','/offline.js','/manifest.webmanifest','/assets/icon-192.png','/assets/icon-512.png'].includes(path), path);
     assert.deepEqual(errors, []);
   });
 } finally {

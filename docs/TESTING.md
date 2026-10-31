@@ -1,4 +1,14 @@
-# Current verification — Phase 3B-3
+# Current verification — Phase 3B-4
+
+See [final stabilization verification](PHASE-3B-4-VERIFICATION.md) for exact final
+counts, evidence, manual limits and the optional archive migration. Run commands
+from the [administrator guide](ADMINISTRATOR-GUIDE.md). New coverage includes
+localized stock decimals, archive constraints, a real backup/restore rehearsal,
+PWA cache policy, installability, offline forms and safe cross-tab updates.
+All database/browser writes target disposable PostgreSQL and synthetic records.
+Never substitute the university database for these fixtures.
+
+# Historical verification — Phase 3B-3
 
 See [frontend PostgreSQL verification](PHASE-3B-3-VERIFICATION.md) for current
 counts, commands and limits. Inventory browser suites now require `TEST_PG_BIN`

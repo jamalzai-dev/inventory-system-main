@@ -40,6 +40,7 @@ export function createStockRepository(pool, materialSpec) {
         const locked = (await client.query(`SELECT ${materialSpec.columns} FROM public.materials
           WHERE id = ANY($1::uuid[]) ORDER BY id FOR UPDATE`, [ids])).rows;
         if (locked.length !== items.length) throw new InventoryApiError(404, 'One or more selected materials were not found.');
+        if (locked.some(row => row.archived)) throw new InventoryApiError(409, 'Archived materials must be made active before adjusting stock.');
         for (let index = 0; index < locked.length; index++) {
           const next = stockUnits(locked[index].current_stock) + stockUnits(deltas[index]);
           if (next < 0n) throw new InventoryApiError(409, 'Insufficient stock for one or more selected materials.');

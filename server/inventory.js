@@ -2,6 +2,7 @@
 import { createInventoryWrites } from './inventory-writes.js';
 import { validUuid } from './inventory-validation.js';
 import { createStockRepository } from './stock.js';
+import { createArchiveRepository } from './material-archive.js';
 // Combine row transaction and exact timestamp, avoiding millisecond truncation
 // and transaction-ID-only tokens. Each API transaction updates a row at most once.
 const versionColumn = "md5(xmin::text || ':' || extract(epoch FROM updated_at)::text) AS version";
@@ -10,7 +11,10 @@ const supplierColumns = `id, name, contact, phone, email, address, description, 
 const materialColumns = `id, name, category_id, current_stock::text AS current_stock,
   supplier_id, unit, serial_number, location, condition, price::text AS price,
   to_char(purchase_date, 'YYYY-MM-DD') AS purchase_date, responsible_person,
-  reorder_level::text AS reorder_level, description, created_at, updated_at, ${versionColumn}`;
+  reorder_level::text AS reorder_level, description, created_at, updated_at, ${versionColumn},
+  coalesce((to_jsonb(materials)->>'archived')::boolean, false) AS archived,
+  (to_jsonb(materials) ? 'archived') AS archive_supported,
+  EXISTS(SELECT 1 FROM public.stock_movements history WHERE history.material_id = materials.id) AS has_history`;
 
 function common(row) {
   return { id: row.id, name: row.name, description: row.description,
@@ -23,7 +27,8 @@ function material(row) {
   return { ...common(row), categoryId: row.category_id, quantity: row.current_stock,
     supplierId: row.supplier_id, unit: row.unit, serial: row.serial_number,
     location: row.location, condition: row.condition, price: row.price,
-    purchaseDate: row.purchase_date, responsible: row.responsible_person, reorderLevel: row.reorder_level };
+    purchaseDate: row.purchase_date, responsible: row.responsible_person, reorderLevel: row.reorder_level,
+    archived: row.archived === true, archiveSupported: row.archive_supported === true, hasHistory: row.has_history === true };
 }
 
 // Accept canonical PostgreSQL UUID text (any version), not arbitrary castable input.
@@ -44,6 +49,7 @@ export function createInventoryRepository(pool) {
   return {
     ...createInventoryWrites(pool, definitions),
     ...createStockRepository(pool, definitions.materials),
+    ...createArchiveRepository(pool, definitions.materials),
     async listCategories() {
       const { rows } = await pool.query(`SELECT ${categoryColumns} FROM public.categories ORDER BY name, id`, []);
       return rows.map(common);

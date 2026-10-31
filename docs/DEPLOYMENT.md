@@ -1,4 +1,13 @@
-# Local operation and future LAN deployment
+# Current deployment preparation — Phase 3B-4
+
+Use the [LAN deployment checklist](LAN-DEPLOYMENT-CHECKLIST.md),
+[administrator guide](ADMINISTRATOR-GUIDE.md), [PWA guide](PWA.md) and
+[backup/recovery procedure](BACKUP-AND-RECOVERY.md). The application now uses
+authenticated Express/PostgreSQL and a registered public-only service worker.
+The notes below are historical; their localStorage/SQLite/no-auth/no-worker plan
+has been superseded and must not be used for current setup.
+
+# Historical local operation and future LAN plan
 
 ## Current application
 

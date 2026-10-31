@@ -10,6 +10,10 @@ export function createInventoryRouter(inventory, csrf) {
   router.get('/materials', async (req, res) => res.json({ data: await inventory.listMaterials() }));
   router.get('/stock-movements', async (req, res) => res.json(await inventory.listMovements(req.query)));
   router.get('/materials/:id/movements', async (req, res) => res.json(await inventory.listMovements(req.query, recordId(req.params.id))));
+  router.patch('/materials/:id/archive', csrf, async (req, res) => {
+    res.locals.inventoryAction = 'update';
+    res.json({ data: await inventory.archiveMaterial(recordId(req.params.id), req.body, expectedVersion(req.get('If-Match'))) });
+  });
   router.post('/stock-operations', csrf, async (req, res) => {
     res.locals.inventoryAction = 'stock';
     const result = await inventory.operateStock(req.body, req.session.admin.id);
@@ -53,6 +57,11 @@ export function createInventoryRouter(inventory, csrf) {
         materials_serial_normalized_unique: 'A material with this serial number already exists.'
       };
       return res.status(409).json({ error: Object.hasOwn(messages, error.constraint) ? messages[error.constraint] : 'This value already exists.' });
+    }
+    if (['23001', '23503'].includes(error.code) && res.locals.inventoryAction === 'delete') {
+      const message = error.constraint === 'stock_movements_material_id_fkey' ? 'This material has stock history and cannot be permanently deleted.'
+        : error.constraint === 'materials_category_id_fkey' ? 'This category contains materials. Move them before deleting it.' : 'This record is in use and cannot be deleted.';
+      return res.status(409).json({ error: message });
     }
     if (error.code === '23001') return res.status(409).json({ error: 'This record is in use and cannot be deleted.' });
     if (error.code === '23503') return res.status(res.locals.inventoryAction === 'delete' ? 409 : 422).json({

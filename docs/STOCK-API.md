@@ -1,3 +1,16 @@
+# Current stock behavior — Phase 3B-4
+
+Direct Adjust Stock and batch stock forms use the same transactional endpoint below.
+The frontend normalizes Pashto/Arabic numerals and the Arabic decimal separator to
+ASCII decimal strings; API validation remains strict. Result previews use exact
+BigInt arithmetic and never replace the server balance.
+
+When optional archive migration 004 is present, new stock operations on archived
+materials return 409. Previously committed operation UUIDs are resolved before this
+check, preserving safe replay without a duplicate movement. Reactivate a record
+before making a new adjustment. No offline writes or background mutation retries
+were added. See [final verification](PHASE-3B-4-VERIFICATION.md).
+
 # Transactional stock API — Phase 3B-2
 
 Implemented on 19 October 2026. Phase 3B-3 now connects these APIs to stock forms,

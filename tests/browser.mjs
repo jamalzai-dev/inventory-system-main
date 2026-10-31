@@ -70,9 +70,9 @@ try {
   await page.reload(); await readyInventory(page); const saved=(await serverInventory()).materials.find(m=>m.name.startsWith('<img')); assert.equal(saved.quantity,'0'); assert.equal(saved.reorderLevel,'8.125');
   await page.locator('.filters input[type=search]').fill('<img'); await page.locator('tbody button').last().click(); await page.locator('.confirm-dialog .primary').click(); await page.locator('.confirm-dialog').waitFor({state:'hidden'});
  });
- await check('referenced category deletion is blocked by the API',async()=>{
+ await check('referenced category deletion explains the restriction and disables unsafe confirmation',async()=>{
   await page.locator('nav [data-page="categories"]').click(); await page.locator('tbody tr').filter({hasText:'Computers'}).locator('button').last().click();
-  await page.locator('.confirm-dialog .primary').click(); await page.locator('[data-i18n=recordInUse]').waitFor(); assert.equal((await serverInventory()).categories.length,2); await page.keyboard.press('Escape');
+  assert.equal(await page.locator('.confirm-dialog .primary').isDisabled(),true); await page.locator('[data-i18n=categoryDeleteBlocked]').waitFor(); assert.equal((await serverInventory()).categories.length,2); await page.keyboard.press('Escape');
  });
  await check('native dialog focus containment and Escape restoration',async()=>{
   await page.locator('#page-actions .primary').click(); for(let i=0;i<12;i++){await page.keyboard.press('Tab');assert.equal(await page.evaluate(()=>!!document.activeElement.closest('dialog')),true);} await page.keyboard.press('Escape');assert.equal(await page.locator('dialog.record-dialog').isVisible(),false);assert.equal(await page.evaluate(()=>document.activeElement.closest('#page-actions')!==null),true);
@@ -144,7 +144,7 @@ try {
    });for(const result of ratios)assert.ok(result.ratio>=result.min,JSON.stringify(result));
   }
  });
- assert.equal(expectedConflicts.length,2);assert.deepEqual(errors,[]);assert.deepEqual(failedRequests,[]);checks.push('no browser console, page errors or failed resource requests');
+ assert.equal(expectedConflicts.length,1);assert.deepEqual(errors,[]);assert.deepEqual(failedRequests,[]);checks.push('no browser console, page errors or failed resource requests');
  await writeFile('tests/artifacts/browser-results.json',JSON.stringify({browser:browser.version(),base,checks,skipped,errors,failedRequests},null,2));
  console.log(`${checks.length} browser checks passed; ${skipped.length} skipped`);
 } finally { await browser.close(); }

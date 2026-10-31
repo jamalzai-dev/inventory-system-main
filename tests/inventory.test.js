@@ -14,7 +14,7 @@ const materialRow = { ...common, category_id: categoryId, current_stock: '999999
 const expectedCommon = { id, name: common.name, description: null, createdAt: timestamp.toISOString(), updatedAt: timestamp.toISOString(), version: common.version };
 const expectedMaterial = { ...expectedCommon, categoryId, quantity: '999999999.999', supplierId,
   unit: 'pieces', serial: 'UNI-001', location: 'Lab', condition: 'Good', price: '999999999.99',
-  purchaseDate: '2026-10-18', responsible: 'احمد', reorderLevel: '0.001' };
+  purchaseDate: '2026-10-18', responsible: 'احمد', reorderLevel: '0.001', archived: false, archiveSupported: false, hasHistory: false };
 const paths = ['/api/categories', '/api/suppliers', '/api/materials', `/api/materials/${id}`];
 
 async function fixture(t, query = async () => ({ rows: [] })) {

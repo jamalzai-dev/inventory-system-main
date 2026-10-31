@@ -30,17 +30,29 @@ async function check(name,action){
 const quantities=async p=>{const state=await serverInventory();return fixture.materials.map(m=>Number(state.materials.find(row=>row.id===fixtureId(m.id)).quantity));};
 async function open(p){await p.goto(base+'/#materials');await p.locator('#remove-materials').click();}
 async function add(p,id,quantity){id=fixtureId(id);await p.locator('#removal-material').selectOption(id);await p.locator('#add-removal').click();if(quantity!==undefined)await p.locator(`[data-removal-id="${id}"] input`).fill(String(quantity));}
-async function review(p){await p.locator('#removal-form [type=submit]').click();await p.locator('.confirm-dialog').waitFor({state:'visible'});}
-async function confirm(p){await p.locator('.confirm-dialog .primary').click();await p.locator('.record-dialog').waitFor({state:'hidden'});}
+async function review(p){await p.locator('#removal-form [type=submit]').click();await p.locator('.confirm-dialog').waitFor({state:'visible'});assert.equal(await p.locator('dialog[open]').count(),1);}
+async function confirm(p){await p.locator('.confirm-dialog .primary').click();await p.locator('.confirm-dialog').waitFor({state:'hidden'});assert.equal(await p.locator('.record-dialog').isVisible(),false);}
 await mkdir('tests/artifacts',{recursive:true});
 try{
+ await check('direct adjustment accepts Pashto decimals, validates immediately and confirms once',async p=>{
+  await p.goto(base+'/#materials');await readyInventory(p);
+  for(const [type,input,expected] of [['add','1',11],['add','۲',13],['add','۰٫۵۰۰',13.5],['remove','1',12.5],['remove','۲٫۵',10],['remove','10',0]]){
+   await p.locator(`[data-record-id="${fixtureId('a')}"] [data-i18n=adjustStock]`).click();
+   await p.locator(`#adjust-form [data-type=${type}]`).click();
+   for(const invalid of ['0','-1','1.0001',...(type==='remove'?['999']:[])]){await p.locator('#adjust-quantity').fill(invalid);assert.equal(await p.locator('#adjust-form [type=submit]').isDisabled(),true);}
+   await p.locator('#adjust-quantity').fill(input);assert.equal(await p.locator('#adjust-form [type=submit]').isEnabled(),true);
+   assert.match(await p.locator('#adjust-result').innerText(),new RegExp(String(expected).replace('.','\\.')));
+   await p.locator('#adjust-form [type=submit]').click();await p.locator('.record-dialog').waitFor({state:'hidden'});
+   assert.deepEqual(await quantities(p),[expected,4,2]);assert.equal(await p.locator('.confirm-dialog').isVisible(),false);
+  }
+ });
  await check('single removal persists after reload and preserves the record',async p=>{
   await open(p);await p.locator('#removal-search').fill('LT-001');assert.equal(await p.locator('#removal-material option').count(),2);await add(p,'a',3);assert.match(await p.locator(`[data-removal-id="${fixtureId('a')}"]`).innerText(),/10 Units/);await review(p);assert.deepEqual(await quantities(p),[10,4,2]);await confirm(p);assert.deepEqual(await quantities(p),[7,4,2]);await p.reload();assert.deepEqual(await quantities(p),[7,4,2]);
  });
  await check('multiple removals, full stock to zero, summaries and duplicate submission guard',async p=>{
   await open(p);await add(p,'a',3);await add(p,'b',4);assert.match(await p.locator(`[data-removal-id="${fixtureId('b')}"]`).innerText(),/4 rolls/);await review(p);
   await p.evaluate(()=>{const submit=document.querySelector('.confirm-dialog .primary');const form=document.querySelector('#removal-form');submit.click();submit.click();form.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));});
-  await p.locator('.record-dialog').waitFor({state:'hidden'}); assert.deepEqual(await quantities(p),[7,0,2]);assert.equal((await serverInventory()).materials.length,3);assert.equal(await p.evaluate(key=>localStorage.getItem(key+'_recovery'),key),null);
+  await p.locator('.confirm-dialog').waitFor({state:'hidden'}); assert.deepEqual(await quantities(p),[7,0,2]);assert.equal((await serverInventory()).materials.length,3);assert.equal(await p.evaluate(key=>localStorage.getItem(key+'_recovery'),key),null);
   await p.reload();assert.deepEqual(await quantities(p),[7,0,2]);await p.goto(base+'/#dashboard');assert.equal(await p.locator('.stat').nth(1).locator('strong').innerText(),'2');await p.goto(base+'/#reports');assert.match(await p.locator('.value').innerText(),/1,700/);
  });
  await check('empty and invalid batches never partially deduct; repeated selections remain one row',async p=>{
@@ -71,7 +83,7 @@ try{
    assert.equal(await p.locator('.record-dialog .language-button,.record-dialog .theme-button').count(),0);assert.equal(await p.locator(`[data-removal-id="${fixtureId('a')}"] input`).inputValue(),'1');assert.equal(await p.locator(`[data-removal-id="${fixtureId('b')}"] input`).inputValue(),'2');assert.equal(await p.locator('html').getAttribute('dir'),lang==='ps'?'rtl':'ltr');
    assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true);assert.equal(await p.locator('.record-dialog').evaluate(n=>n.scrollWidth<=n.clientWidth+1),true);await review(p);assert.equal(await p.locator('.confirm-dialog').evaluate(n=>n.scrollWidth<=n.clientWidth+1),true);
    if(width===360&&lang==='ps'&&dark)await p.screenshot({path:'tests/artifacts/removal-360-ps-dark.png'});
-   await p.keyboard.press('Escape');await p.keyboard.press('Escape');await p.goto(base+'/#reports');await p.locator('#print-category').selectOption(fixtureId('c'));await p.evaluate(()=>{window.didPrint=false;window.print=()=>{window.didPrint=true;};});await p.locator('[data-i18n=printCategory]').click();await p.waitForFunction(()=>window.didPrint);assert.equal(await p.locator('#print-area tbody tr').count(),2);assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true);
+   await p.keyboard.press('Escape');await p.locator('.record-dialog').waitFor({state:'visible'});assert.equal(await p.locator('dialog[open]').count(),1);assert.equal(await p.locator(`[data-removal-id="${fixtureId('a')}"] input`).inputValue(),'1');await p.keyboard.press('Escape');await p.locator('.record-dialog').waitFor({state:'hidden'});await p.goto(base+'/#reports');await p.locator('#print-category').selectOption(fixtureId('c'));await p.evaluate(()=>{window.didPrint=false;window.print=()=>{window.didPrint=true;};});await p.locator('[data-i18n=printCategory]').click();await p.waitForFunction(()=>window.didPrint);assert.equal(await p.locator('#print-area tbody tr').count(),2);assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true);
   }
   assert.deepEqual(await quantities(p),[10,4,2]);
  });

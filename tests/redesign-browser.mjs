@@ -177,7 +177,7 @@ try {
       await route('materials');
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true, `${width}/${lang}`);
       const actions = page.locator('tbody tr').first().locator('.row-actions button');
-      assert.equal(await actions.count(), 2);
+      assert.equal(await actions.count(), 3); // Edit, Adjust Stock, Delete.
       for (const button of await actions.all()) {
         await button.scrollIntoViewIfNeeded();
         const bounds = await button.boundingBox();

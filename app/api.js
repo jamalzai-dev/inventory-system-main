@@ -4,6 +4,11 @@ export class ApiError extends Error {
   constructor(code, status = 0, uncertain = false) { super(code); this.code = code; this.status = status; this.uncertain = uncertain; }
 }
 const messages = new Map([
+  ['This material has stock history and cannot be permanently deleted.', 'historyDeleteBlocked'],
+  ['This category contains materials. Move them before deleting it.', 'categoryDeleteBlocked'],
+  ['Material archiving requires the reviewed database migration.', 'archiveUnavailable'],
+  ['Only zero-stock materials can be archived.', 'archiveStockBlocked'],
+  ['Archived materials must be made active before adjusting stock.', 'materialArchived'],
   ['This record has changed. Reload it before trying again.', 'recordConflict'],
   ['A category with this name already exists.', 'duplicateRecord'],
   ['A supplier with this name already exists.', 'duplicateRecord'],

@@ -524,6 +524,21 @@ pre { max-block-size: 350px; white-space: pre-wrap; overflow: auto; overflow-wra
 .connection-status[hidden] { display: none; }
 .connection-status bdi { max-width: 100%; overflow-wrap: anywhere; font-size: 12px; }
 .history-dialog > .stack { padding: 24px; }
+.stock-choices { display: flex; flex-wrap: wrap; gap: 8px; margin-block: 16px; }
+.stock-choices .button { flex: 1; min-block-size: 44px; }
+.stock-choices [aria-pressed='true'] { border: 2px solid var(--primary, #2563eb); font-weight: 700; }
+.stock-result, .stock-available { padding: 12px; background: var(--surface-soft); border-radius: 8px; overflow-wrap: anywhere; }
+.filters .archive-filter { display: flex; flex: 1 1 100%; min-inline-size: 0; min-block-size: 44px; align-items: center; gap: 10px; }
+.filters .archive-filter input { flex: 0 0 20px; inline-size: 20px; block-size: 20px; min-block-size: 20px; padding: 0; margin: 0; }
+.archive-filter > span { flex: 1; min-inline-size: 0; line-height: 1.6; }
+.row-actions { flex-wrap: wrap; }
+.row-actions .labeled-action { inline-size: auto; max-inline-size: 150px; white-space: normal; }
+.row-actions .labeled-action > span { position: static; inline-size: auto; block-size: auto; clip-path: none; overflow: visible; white-space: normal; }
+@media screen and (max-width: 650px) {
+  .table-wrap td:last-child:has(.row-actions) { gap: 10px; }
+  .table-wrap td:last-child:has(.row-actions)::before { flex: 0 0 auto; white-space: nowrap; }
+  .table-wrap td:last-child .row-actions { min-inline-size: 0; justify-content: flex-end; }
+}
 .page-heading { flex-wrap: wrap; }
 .page-heading > div:first-child { flex: 1 1 220px; min-inline-size: 0; }
 #page-actions { flex: 1 1 340px; max-inline-size: 100%; }
